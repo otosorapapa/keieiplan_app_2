@@ -6,7 +6,6 @@ import io
 import math
 import datetime as dt
 from typing import Dict, Tuple, List
-from collections import OrderedDict
 import openpyxl  # noqa: F401  # Ensure Excel engine is available
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -137,98 +136,6 @@ def render_tornado_mckinsey(changes: List[Tuple[str, float]], title: str, unit_l
     )
     if ellipsis:
         st.caption("※ 一部の値は省略記号で表示しています。下表で詳細を確認ください。")
-
-
-def fmt_yen(x: float) -> str:
-    return f"¥{x:,.0f}"
-
-
-def fmt_pct(x: float) -> str:
-    return f"{x*100:.1f}%"
-
-
-def render_waterfall_plan(base_ord: float, deltas: "OrderedDict[str, float]", final_label: str = "計画ORD") -> "matplotlib.figure.Figure":
-    _set_jp_font()
-    labels = ["ベースORD"] + list(deltas.keys()) + [final_label]
-    values = list(deltas.values())
-    cum = base_ord
-    cum_values = [base_ord]
-    for d in values:
-        cum += d
-        cum_values.append(cum)
-    fig, ax = plt.subplots(figsize=(6, 4))
-    prev = base_ord
-    xs = np.arange(len(deltas) + 2)
-    ax.bar(0, base_ord, color="#9E9E9E")
-    for i, (lbl, d) in enumerate(deltas.items(), start=1):
-        color = "#0B3D91" if d >= 0 else "#9E9E9E"
-        bottom = prev if d >= 0 else prev + d
-        ax.bar(i, abs(d), bottom=bottom, color=color)
-        ax.text(i, bottom + d/2, fmt_yen(d), ha="center", va="center")
-        prev += d
-    ax.bar(len(deltas) + 1, prev, color="#0B3D91")
-    ax.set_xticks(xs)
-    ax.set_xticklabels(labels)
-    for spine in ("top", "right"):
-        ax.spines[spine].set_visible(False)
-    for spine in ("left", "bottom"):
-        ax.spines[spine].set_color("#D0D0D0")
-        ax.spines[spine].set_linewidth(0.5)
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: fmt_yen(x)))
-    fig.tight_layout()
-    return fig
-
-
-def render_bullet_ord(current: float, target: float, title: str = "経常利益（ORD）到達度") -> "matplotlib.figure.Figure":
-    _set_jp_font()
-    fig, ax = plt.subplots(figsize=(6, 1.5))
-    max_v = max(current, target) * 1.2 if max(current, target) > 0 else 1
-    ax.barh(0, current, color="#0B3D91", height=0.4)
-    ax.axvline(target, color="#9E9E9E", linewidth=1.5)
-    ax.set_xlim(0, max_v)
-    ax.set_yticks([])
-    ax.set_title(title)
-    for spine in ("top", "right"):
-        ax.spines[spine].set_visible(False)
-    for spine in ("left", "bottom"):
-        ax.spines[spine].set_color("#D0D0D0")
-        ax.spines[spine].set_linewidth(0.5)
-    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: fmt_yen(x)))
-    fig.tight_layout()
-    return fig
-
-
-def render_cost_structure(rate_dict: dict[str, float], title: str = "コスト構成（売上対比）") -> "matplotlib.figure.Figure":
-    _set_jp_font()
-    fig, ax = plt.subplots(figsize=(6, 2))
-    left = 0.0
-    labels = list(rate_dict.keys())
-    colors = ["#9E9E9E", "#C0C0C0", "#B0B0B0", "#A0A0A0", "#909090"]
-    for i, (lbl, rate) in enumerate(rate_dict.items()):
-        ax.barh(0, rate, left=left, color=colors[i % len(colors)], height=0.5)
-        ax.text(left + rate / 2, 0, lbl, ha="center", va="center", color="white", fontsize=9)
-        left += rate
-    ax.set_xlim(0, 1)
-    ax.set_yticks([])
-    ax.set_title(title)
-    for spine in ("top", "right"):
-        ax.spines[spine].set_visible(False)
-    for spine in ("left", "bottom"):
-        ax.spines[spine].set_color("#D0D0D0")
-        ax.spines[spine].set_linewidth(0.5)
-    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: fmt_pct(x)))
-    fig.tight_layout()
-    return fig
-
-
-def render_kpi_cards(result: dict, unit: str) -> None:
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("売上高", f"{fmt_yen(result['REV'])}")
-    gross_rate = result['GROSS'] / result['REV'] if result['REV'] else float('nan')
-    c2.metric("粗利率", fmt_pct(gross_rate) if gross_rate == gross_rate else "—")
-    c3.metric("経常利益", f"{fmt_yen(result['ORD'])}")
-    be_lbl = "∞" if not math.isfinite(result['BE_SALES']) else fmt_yen(result['BE_SALES'])
-    c4.metric("損益分岐点売上高", be_lbl)
 
 # --- EXCEL JP LOCALE
 def apply_japanese_styles(wb) -> None:
@@ -479,7 +386,7 @@ with st.sidebar:
     st.header("⚙️ 基本設定")
     fiscal_year = st.number_input("会計年度", value=int(DEFAULTS["fiscal_year"]), step=1, format="%d")
     unit = st.selectbox("表示単位", ["百万円", "千円", "円"], index=0, help="計算は円ベース、表示のみ丸めます。")
-    base_sales = st.number_input("売上高（ベース）", value=float(DEFAULTS["sales"]), step=10_000_000.0, min_value=0.0, format="%.0f", key="base_sales")
+    base_sales = st.number_input("売上高（ベース）", value=float(DEFAULTS["sales"]), step=10_000_000.0, min_value=0.0, format="%.0f")
     fte = st.number_input("人員数（FTE換算）", value=float(DEFAULTS["fte"]), step=1.0, min_value=0.0)
 
     st.markdown("---")
@@ -631,113 +538,34 @@ apply_setting("NOI_OTH", noi_oth_input)
 apply_setting("NOE_INT", noe_int_input)
 apply_setting("NOE_OTH", noe_oth_input)
 
-
-def synced_slider(label: str, key: str, min_value: float, max_value: float, step: float) -> None:
-    slider_key = f"{key}_sld"
-    if key not in st.session_state:
-        st.session_state[key] = min_value
-    if slider_key not in st.session_state:
-        st.session_state[slider_key] = st.session_state[key]
-
-    def _update() -> None:
-        st.session_state[key] = st.session_state[slider_key]
-
-    st.slider(
-        label,
-        min_value=min_value,
-        max_value=max_value,
-        step=step,
-        value=st.session_state.get(key, min_value),
-        key=slider_key,
-        on_change=_update,
-    )
-    if st.session_state[slider_key] != st.session_state[key]:
-        st.session_state[slider_key] = st.session_state[key]
-
 tab_input, tab_scen, tab_analysis, tab_export = st.tabs(["📝 計画入力", "🧪 シナリオ", "📊 感応度分析", "📤 エクスポート"])
 
 with tab_input:
-    _set_jp_font()
-    plan_amt = compute(base_plan, amount_overrides=st.session_state.get("overrides", {}))
+    st.subheader("単年利益計画（目標列）")
+    base_amt = compute(base_plan)
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("売上高", f"{format_money(base_amt['REV'], base_plan.unit)} {base_plan.unit}")
+    c2.metric("粗利(加工高)", f"{format_money(base_amt['GROSS'], base_plan.unit)} {base_plan.unit}")
+    c3.metric("営業利益", f"{format_money(base_amt['OP'], base_plan.unit)} {base_plan.unit}")
+    c4.metric("経常利益", f"{format_money(base_amt['ORD'], base_plan.unit)} {base_plan.unit}")
+    be_label = "∞" if not math.isfinite(base_amt["BE_SALES"]) else f"{format_money(base_amt['BE_SALES'], base_plan.unit)} {base_plan.unit}"
+    c5.metric("損益分岐点売上高", be_label)
 
-    base_default = PlanConfig(base_sales=base_sales, fte=fte, unit=unit)
-    base_default.set_rate("COGS_MAT", DEFAULTS["cogs_mat_rate"])
-    base_default.set_rate("COGS_LBR", DEFAULTS["cogs_lbr_rate"])
-    base_default.set_rate("COGS_OUT_SRC", DEFAULTS["cogs_out_src_rate"])
-    base_default.set_rate("COGS_OUT_CON", DEFAULTS["cogs_out_con_rate"])
-    base_default.set_rate("COGS_OTH", DEFAULTS["cogs_oth_rate"])
-    base_default.set_rate("OPEX_H", DEFAULTS["opex_h_rate"])
-    base_default.set_rate("OPEX_K", DEFAULTS["opex_k_rate"])
-    base_default.set_rate("OPEX_DEP", DEFAULTS["opex_dep_rate"])
-    base_default.set_rate("NOI_MISC", DEFAULTS["noi_misc_rate"])
-    base_default.set_rate("NOI_GRANT", DEFAULTS["noi_grant_rate"])
-    base_default.set_rate("NOI_OTH", DEFAULTS["noi_oth_rate"])
-    base_default.set_rate("NOE_INT", DEFAULTS["noe_int_rate"])
-    base_default.set_rate("NOE_OTH", DEFAULTS["noe_oth_rate"])
-    base_amt_default = compute(base_default)
-
-    base_ord = base_amt_default["ORD"]
-    base_gross_rate = base_amt_default["GROSS"] / base_amt_default["REV"] if base_amt_default["REV"] else 0.0
-    delta_sales = (plan_amt["REV"] - base_amt_default["REV"]) * base_gross_rate
-    delta_gross = (plan_amt["GROSS"] - base_amt_default["GROSS"]) - delta_sales
-    delta_sga = -(plan_amt["OPEX_K"] - base_amt_default["OPEX_K"])
-    delta_personnel = -(plan_amt["OPEX_H"] - base_amt_default["OPEX_H"])
-    delta_dep = -(plan_amt["OPEX_DEP"] - base_amt_default["OPEX_DEP"])
-    delta_other = plan_amt["ORD"] - base_ord - (delta_sales + delta_gross + delta_sga + delta_personnel + delta_dep)
-    wf_deltas = OrderedDict([
-        ("売上増減", delta_sales),
-        ("粗利率変化", delta_gross),
-        ("販管費", delta_sga),
-        ("人件費", delta_personnel),
-        ("減価償却", delta_dep),
-        ("その他", delta_other),
-    ])
-
-    left_col, right_col = st.columns(2)
-    with left_col:
-        st.subheader("主要コントロール")
-        max_sales = max(base_sales * 2, DEFAULTS["sales"] * 2)
-        synced_slider("売上高（ベース）", "base_sales", 0.0, max_sales, 1_000_000.0)
-        if st.session_state.get("input_mode", "％（増減/売上対比）") == "％（増減/売上対比）":
-            synced_slider("人件費率", "人件費_pct", 0.0, 1.0, 0.01)
-            synced_slider("経費率", "経費_pct", 0.0, 1.0, 0.01)
-            synced_slider("減価償却率", "減価償却_pct", 0.0, 0.2, 0.001)
-        else:
-            synced_slider("人件費（円）", "人件費_amt", 0.0, max_sales, 1_000_000.0)
-            synced_slider("経費（円）", "経費_amt", 0.0, max_sales, 1_000_000.0)
-            synced_slider("減価償却（円）", "減価償却_amt", 0.0, max_sales, 1_000_000.0)
-
-    with right_col:
-        render_kpi_cards(plan_amt, unit)
-        fig_wf = render_waterfall_plan(base_ord, wf_deltas)
-        st.pyplot(fig_wf, use_container_width=True)
-        buf = io.BytesIO(); fig_wf.savefig(buf, format="png", dpi=200, bbox_inches="tight")
-        st.download_button("📥 寄与分解（PNG）", data=buf.getvalue(), file_name="waterfall.png", mime="image/png")
-        fig_b = render_bullet_ord(plan_amt["ORD"], base_amt_default["ORD"])
-        st.pyplot(fig_b, use_container_width=True)
-        buf2 = io.BytesIO(); fig_b.savefig(buf2, format="png", dpi=200, bbox_inches="tight")
-        st.download_button("📥 到達度（PNG）", data=buf2.getvalue(), file_name="bullet.png", mime="image/png")
-        rates = {
-            "材料費": plan_amt["COGS_MAT"] / plan_amt["REV"] if plan_amt["REV"] else 0.0,
-            "外注費": (plan_amt["COGS_OUT_SRC"] + plan_amt["COGS_OUT_CON"]) / plan_amt["REV"] if plan_amt["REV"] else 0.0,
-            "人件費": plan_amt["OPEX_H"] / plan_amt["REV"] if plan_amt["REV"] else 0.0,
-            "経費": plan_amt["OPEX_K"] / plan_amt["REV"] if plan_amt["REV"] else 0.0,
-            "減価償却": plan_amt["OPEX_DEP"] / plan_amt["REV"] if plan_amt["REV"] else 0.0,
-        }
-        fig_c = render_cost_structure(rates)
-        st.pyplot(fig_c, use_container_width=True)
-        buf3 = io.BytesIO(); fig_c.savefig(buf3, format="png", dpi=200, bbox_inches="tight")
-        st.download_button("📥 コスト構成（PNG）", data=buf3.getvalue(), file_name="cost.png", mime="image/png")
+    c6, c7, c8 = st.columns(3)
+    c6.metric("一人当たり売上", f"{format_money(base_amt['PC_SALES'], base_plan.unit)} {base_plan.unit}")
+    c7.metric("一人当たり粗利", f"{format_money(base_amt['PC_GROSS'], base_plan.unit)} {base_plan.unit}")
+    ldr = base_amt["LDR"]
+    ldr_str = "—" if (ldr is None or not math.isfinite(ldr)) else f"{ldr*100:.1f}%"
+    c8.metric("労働分配率", ldr_str)
 
     rows = []
     for code, label, group in ITEMS:
         if code in ("PC_SALES", "PC_GROSS", "PC_ORD", "LDR", "BE_SALES"):
             continue
-        val = plan_amt[code]
+        val = base_amt[code]
         rows.append({"項目": label, "金額": format_money(val, base_plan.unit)})
     df = pd.DataFrame(rows)
-    st.subheader("計画サマリー")
-    st.dataframe(df, use_container_width=True, height=min(520, 40 + 28 * len(rows)))
+    st.dataframe(df, use_container_width=True, height=min(520, 40 + 28*len(rows)))
 
     st.info("ヒント: サイドバーの％／実額・人員・売上を変えると、即座に計算結果が更新されます。さらに固定費や個別額を設定したい場合は、下の『金額上書き』を利用してください。")
 
@@ -752,6 +580,7 @@ with tab_input:
                 c = col2
             else:
                 c = col3
+            # Look up label without reconstructing the dictionary each time
             val = c.number_input(
                 f"{ITEM_LABELS[code]}（金額上書き）",
                 min_value=0.0,
@@ -771,7 +600,7 @@ with tab_input:
             for code, label, group in ITEMS:
                 if code in ("PC_SALES","PC_GROSS","PC_ORD","LDR","BE_SALES"):
                     continue
-                before = plan_amt[code]
+                before = base_amt[code]
                 after = preview_amt[code]
                 rows2.append({"項目": label, "前": format_money(before, base_plan.unit), "後": format_money(after, base_plan.unit)})
             st.dataframe(pd.DataFrame(rows2), use_container_width=True)
