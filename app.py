@@ -199,6 +199,55 @@ class PlanConfig:
         c.items = {k: v.copy() for k, v in self.items.items()}
         return c
 
+
+def dual_input_row(label: str, base_sales: float, *,
+                   mode_key: str,
+                   pct_default: float = 0.0,
+                   amount_default: float = 0.0,
+                   pct_min: float = 0.0, pct_max: float = 3.0, pct_step: float = 0.005,
+                   help_text: str = "") -> dict:
+    """
+    返り値: {"method": "rate" or "amount", "value": float}
+    - mode=="％（増減/売上対比）": 率を編集、実額は参考表示（= rate * base_sales）
+    - mode=="実額（円）": 実額を編集、率は参考表示（= amount / base_sales）
+    - 0除算/NaNは自動で保護し、表示は0とする
+    """
+    mode = st.session_state.get(mode_key, "％（増減/売上対比）")
+    key_base = label.replace("｜", "_").replace(" ", "_")
+    if mode == "％（増減/売上対比）":
+        rate = st.number_input(
+            f"{label}（率）",
+            min_value=pct_min,
+            max_value=pct_max,
+            step=pct_step,
+            format="%.3f",
+            value=pct_default,
+            help=help_text,
+            key=f"{key_base}_pct"
+        )
+        amount = rate * base_sales
+        if not math.isfinite(amount):
+            amount = 0.0
+        st.caption(f"金額 ¥{amount:,.0f}")
+        return {"method": "rate", "value": rate}
+    else:
+        amount = st.number_input(
+            f"{label}（実額）",
+            min_value=0.0,
+            step=1_000_000.0,
+            format="%.0f",
+            value=amount_default,
+            help=help_text,
+            key=f"{key_base}_amt"
+        )
+        if not math.isfinite(amount):
+            amount = 0.0
+        rate = amount / base_sales if base_sales > 0 else 0.0
+        if not math.isfinite(rate):
+            rate = 0.0
+        st.caption(f"率 {rate*100:.1f}%")
+        return {"method": "amount", "value": amount}
+
 def compute(plan: PlanConfig, sales_override: float | None = None, amount_overrides: Dict[str, float] | None = None) -> Dict[str, float]:
     S = float(plan.base_sales if sales_override is None else sales_override)
     amt = {code: 0.0 for code, *_ in ITEMS}
@@ -325,6 +374,14 @@ def bisection_for_target_op(plan: PlanConfig, target_op: float, s_low: float, s_
     return mid, compute(plan, sales_override=mid)
 
 # Sidebar
+mode = st.sidebar.radio(
+    "入力モード",
+    ["％（増減/売上対比）", "実額（円）"],
+    horizontal=True,
+    index=0,
+    key="input_mode",
+)
+
 with st.sidebar:
     st.header("⚙️ 基本設定")
     fiscal_year = st.number_input("会計年度", value=int(DEFAULTS["fiscal_year"]), step=1, format="%d")
@@ -333,43 +390,153 @@ with st.sidebar:
     fte = st.number_input("人員数（FTE換算）", value=float(DEFAULTS["fte"]), step=1.0, min_value=0.0)
 
     st.markdown("---")
-    st.caption("外部仕入（売上対・初期値）")
-    cogs_mat_r = st.number_input("材料費 率", value=float(DEFAULTS["cogs_mat_rate"]), step=0.01, min_value=0.0, max_value=3.0, format="%.3f")
-    cogs_lbr_r = st.number_input("労務費(外部) 率", value=float(DEFAULTS["cogs_lbr_rate"]), step=0.01, min_value=0.0, max_value=3.0, format="%.3f")
-    cogs_out_src_r = st.number_input("外注費(専属) 率", value=float(DEFAULTS["cogs_out_src_rate"]), step=0.01, min_value=0.0, max_value=3.0, format="%.3f")
-    cogs_out_con_r = st.number_input("外注費(委託) 率", value=float(DEFAULTS["cogs_out_con_rate"]), step=0.01, min_value=0.0, max_value=3.0, format="%.3f")
-    cogs_oth_r = st.number_input("その他諸経費 率", value=float(DEFAULTS["cogs_oth_rate"]), step=0.005, min_value=0.0, max_value=3.0, format="%.3f")
+    st.caption("外部仕入")
+    cogs_mat_input = dual_input_row(
+        "材料費",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["cogs_mat_rate"]),
+        amount_default=base_sales * DEFAULTS["cogs_mat_rate"],
+        pct_step=0.01,
+    )
+    cogs_lbr_input = dual_input_row(
+        "労務費(外部)",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["cogs_lbr_rate"]),
+        amount_default=base_sales * DEFAULTS["cogs_lbr_rate"],
+        pct_step=0.01,
+    )
+    cogs_out_src_input = dual_input_row(
+        "外注費(専属)",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["cogs_out_src_rate"]),
+        amount_default=base_sales * DEFAULTS["cogs_out_src_rate"],
+        pct_step=0.01,
+    )
+    cogs_out_con_input = dual_input_row(
+        "外注費(委託)",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["cogs_out_con_rate"]),
+        amount_default=base_sales * DEFAULTS["cogs_out_con_rate"],
+        pct_step=0.01,
+    )
+    cogs_oth_input = dual_input_row(
+        "その他諸経費",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["cogs_oth_rate"]),
+        amount_default=base_sales * DEFAULTS["cogs_oth_rate"],
+        pct_step=0.005,
+    )
 
     st.markdown("---")
-    st.caption("内部費用（売上対・初期値）")
-    opex_h_r = st.number_input("人件費 率", value=float(DEFAULTS["opex_h_rate"]), step=0.01, min_value=0.0, max_value=3.0, format="%.3f")
-    opex_k_r = st.number_input("経費 率", value=float(DEFAULTS["opex_k_rate"]), step=0.01, min_value=0.0, max_value=3.0, format="%.3f")
-    opex_dep_r = st.number_input("減価償却 率", value=float(DEFAULTS["opex_dep_rate"]), step=0.001, min_value=0.0, max_value=3.0, format="%.3f")
+    st.caption("内部費用")
+    opex_h_input = dual_input_row(
+        "人件費",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["opex_h_rate"]),
+        amount_default=base_sales * DEFAULTS["opex_h_rate"],
+        pct_step=0.01,
+    )
+    opex_k_input = dual_input_row(
+        "経費",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["opex_k_rate"]),
+        amount_default=base_sales * DEFAULTS["opex_k_rate"],
+        pct_step=0.01,
+    )
+    opex_dep_input = dual_input_row(
+        "減価償却",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["opex_dep_rate"]),
+        amount_default=base_sales * DEFAULTS["opex_dep_rate"],
+        pct_step=0.001,
+    )
 
     st.markdown("---")
-    st.caption("営業外（売上対・初期値）")
-    noi_misc_r = st.number_input("営業外収益：雑収入 率", value=float(DEFAULTS["noi_misc_rate"]), step=0.0005, min_value=0.0, max_value=1.0, format="%.4f")
-    noi_grant_r = st.number_input("営業外収益：補助金 率", value=float(DEFAULTS["noi_grant_rate"]), step=0.0005, min_value=0.0, max_value=1.0, format="%.4f")
-    noi_oth_r = st.number_input("営業外収益：その他 率", value=float(DEFAULTS["noi_oth_rate"]), step=0.0005, min_value=0.0, max_value=1.0, format="%.4f")
-    noe_int_r = st.number_input("営業外費用：支払利息 率", value=float(DEFAULTS["noe_int_rate"]), step=0.0005, min_value=0.0, max_value=1.0, format="%.4f")
-    noe_oth_r = st.number_input("営業外費用：雑損 率", value=float(DEFAULTS["noe_oth_rate"]), step=0.0005, min_value=0.0, max_value=1.0, format="%.4f")
+    st.caption("営業外")
+    noi_misc_input = dual_input_row(
+        "営業外収益：雑収入",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["noi_misc_rate"]),
+        amount_default=base_sales * DEFAULTS["noi_misc_rate"],
+        pct_min=0.0,
+        pct_max=1.0,
+        pct_step=0.0005,
+    )
+    noi_grant_input = dual_input_row(
+        "営業外収益：補助金",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["noi_grant_rate"]),
+        amount_default=base_sales * DEFAULTS["noi_grant_rate"],
+        pct_min=0.0,
+        pct_max=1.0,
+        pct_step=0.0005,
+    )
+    noi_oth_input = dual_input_row(
+        "営業外収益：その他",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["noi_oth_rate"]),
+        amount_default=base_sales * DEFAULTS["noi_oth_rate"],
+        pct_min=0.0,
+        pct_max=1.0,
+        pct_step=0.0005,
+    )
+    noe_int_input = dual_input_row(
+        "営業外費用：支払利息",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["noe_int_rate"]),
+        amount_default=base_sales * DEFAULTS["noe_int_rate"],
+        pct_min=0.0,
+        pct_max=1.0,
+        pct_step=0.0005,
+    )
+    noe_oth_input = dual_input_row(
+        "営業外費用：雑損",
+        base_sales,
+        mode_key="input_mode",
+        pct_default=float(DEFAULTS["noe_oth_rate"]),
+        amount_default=base_sales * DEFAULTS["noe_oth_rate"],
+        pct_min=0.0,
+        pct_max=1.0,
+        pct_step=0.0005,
+    )
 
 base_plan = PlanConfig(base_sales=base_sales, fte=fte, unit=unit)
-base_plan.set_rate("COGS_MAT", cogs_mat_r, "sales")
-base_plan.set_rate("COGS_LBR", cogs_lbr_r, "sales")
-base_plan.set_rate("COGS_OUT_SRC", cogs_out_src_r, "sales")
-base_plan.set_rate("COGS_OUT_CON", cogs_out_con_r, "sales")
-base_plan.set_rate("COGS_OTH", cogs_oth_r, "sales")
 
-base_plan.set_rate("OPEX_H", opex_h_r, "sales")
-base_plan.set_rate("OPEX_K", opex_k_r, "sales")
-base_plan.set_rate("OPEX_DEP", opex_dep_r, "sales")
 
-base_plan.set_rate("NOI_MISC", noi_misc_r, "sales")
-base_plan.set_rate("NOI_GRANT", noi_grant_r, "sales")
-base_plan.set_rate("NOI_OTH", noi_oth_r, "sales")
-base_plan.set_rate("NOE_INT", noe_int_r, "sales")
-base_plan.set_rate("NOE_OTH", noe_oth_r, "sales")
+def apply_setting(code: str, result: dict) -> None:
+    if result["method"] == "rate":
+        base_plan.set_rate(code, result["value"], "sales")
+    else:
+        base_plan.set_amount(code, result["value"])
+
+
+apply_setting("COGS_MAT", cogs_mat_input)
+apply_setting("COGS_LBR", cogs_lbr_input)
+apply_setting("COGS_OUT_SRC", cogs_out_src_input)
+apply_setting("COGS_OUT_CON", cogs_out_con_input)
+apply_setting("COGS_OTH", cogs_oth_input)
+
+apply_setting("OPEX_H", opex_h_input)
+apply_setting("OPEX_K", opex_k_input)
+apply_setting("OPEX_DEP", opex_dep_input)
+
+apply_setting("NOI_MISC", noi_misc_input)
+apply_setting("NOI_GRANT", noi_grant_input)
+apply_setting("NOI_OTH", noi_oth_input)
+apply_setting("NOE_INT", noe_int_input)
+apply_setting("NOE_OTH", noe_oth_input)
 
 tab_input, tab_scen, tab_analysis, tab_export = st.tabs(["📝 計画入力", "🧪 シナリオ", "📊 感応度分析", "📤 エクスポート"])
 
@@ -400,7 +567,7 @@ with tab_input:
     df = pd.DataFrame(rows)
     st.dataframe(df, use_container_width=True, height=min(520, 40 + 28*len(rows)))
 
-    st.info("ヒント: サイドバーの率・人員・売上を変えると、即座に計算結果が更新されます。金額入力を使いたい場合は、下の『金額上書き』を利用してください。")
+    st.info("ヒント: サイドバーの％／実額・人員・売上を変えると、即座に計算結果が更新されます。さらに固定費や個別額を設定したい場合は、下の『金額上書き』を利用してください。")
 
     with st.expander("🔧 金額上書き（固定費/個別額の設定）", expanded=False):
         st.caption("金額が入力された項目は、率の指定より優先され固定費扱いになります。")
