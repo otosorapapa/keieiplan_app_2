@@ -176,6 +176,150 @@ def render_tornado_mckinsey(
     if ellipsis:
         st.caption("※ 一部の値は省略記号で表示しています。下表で詳細を確認ください。")
 
+
+def build_sensitivity_view_options():
+    st.subheader("📉 感応度分析｜表示設定")
+    c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
+    with c1:
+        viz = st.radio(
+            "可視化タイプ",
+            ["トルネード（±差分）", "ウォーターフォール（寄与累積）"],
+            horizontal=True,
+        )
+    with c2:
+        top_n = st.slider("表示項目数 (Top-N)", 3, 12, 6, 1)
+    with c3:
+        height_px = st.slider("グラフ高さ (px)", 200, 900, 360, 20)
+    with c4:
+        compact = st.checkbox("コンパクト表示（小さな文字）", True)
+
+    step = st.slider("感応度ステップ（±）", 0.01, 0.20, 0.10, 0.01)
+    show_values = st.checkbox("値ラベルを表示", True)
+    return dict(viz=viz, top_n=top_n, height_px=height_px,
+                compact=compact, step=step, show_values=show_values)
+
+
+def _sensitivity_items(plan: dict, step: float):
+    """各変数の±stepによる経常利益差分（ceteris paribus）。"""
+    keys = [
+        ("sales", "売上高", "amount"),
+        ("gp_rate", "粗利率", "rate"),
+        ("opex_h", "人件費", "amount"),
+        ("opex_fixed", "販管費（固定費）", "amount"),
+        ("opex_dep", "減価償却", "amount"),
+        ("opex_oth", "その他費用", "amount"),
+    ]
+    base_ord = compute_plan(plan)["ord"]
+    items = []
+    for k, label, kind in keys:
+        p_low = plan.copy()
+        p_high = plan.copy()
+        if kind == "rate":
+            p_low[k] = max(0.0, plan[k] - step)
+            p_high[k] = min(1.0, plan[k] + step)
+        else:
+            p_low[k] = max(0.0, plan[k] * (1 - step))
+            p_high[k] = plan[k] * (1 + step)
+
+        low_ord = compute_plan(p_low)["ord"]
+        high_ord = compute_plan(p_high)["ord"]
+        delta_low = low_ord - base_ord
+        delta_high = high_ord - base_ord
+        span = abs(delta_low) + abs(delta_high)
+        items.append(dict(key=k, label=label,
+                          delta_low=delta_low, delta_high=delta_high, span=span))
+    items.sort(key=lambda x: x["span"], reverse=True)
+    return items
+
+
+def render_tornado_compact(plan: dict, step: float, top_n: int, height_px: int,
+                           compact: bool, show_values: bool):
+    """俯瞰性を高めたトルネード図（Top-N・高さ・フォント調整）"""
+    items = _sensitivity_items(plan, step)[:top_n]
+    labels = [x["label"] for x in items]
+    lows = [x["delta_low"] for x in items]
+    highs = [x["delta_high"] for x in items]
+
+    fig_h_in = max(height_px / 96.0, 2 / 3)
+    fig, ax = plt.subplots(figsize=(7, fig_h_in))
+    for i, (lo, hi) in enumerate(zip(lows, highs)):
+        ax.barh(i, hi, color="#0B3D91", alpha=0.9)
+        ax.barh(i, lo, color="#9E9E9E", alpha=0.9)
+
+    ax.set_yticks(range(len(labels)))
+    ax.set_yticklabels(labels, fontsize=(9 if compact else 11))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"¥{x:,.0f}"))
+    ax.axvline(0, color="#D0D0D0", linewidth=0.8)
+    ax.set_xlabel("経常利益への寄与（差分）", fontsize=(9 if compact else 11))
+
+    if show_values:
+        offset = max(1.0, max(abs(v) for v in lows + highs) * 0.02)
+        for i, (lo, hi) in enumerate(zip(lows, highs)):
+            ax.text(hi + (offset if hi >= 0 else -offset),
+                    i, format_money(hi), va="center", ha="left" if hi >= 0 else "right", fontsize=(8 if compact else 10))
+            ax.text(lo + (offset if lo >= 0 else -offset),
+                    i, format_money(lo), va="center", ha="left" if lo >= 0 else "right", fontsize=(8 if compact else 10))
+
+    fig.tight_layout()
+    st.pyplot(fig, use_container_width=True)
+
+
+def render_sensitivity_waterfall(plan: dict, step: float, top_n: int, height_px: int,
+                                 compact: bool, show_values: bool):
+    """
+    感応度の「寄与累積」をウォーターフォールで表示。
+    ・各変数を +step 側に単独シフトした場合の寄与を絶対値降順に並べ、
+      ベースORDから順に累積表示（相互作用は考慮しない近似）。
+    """
+    base_ord = compute_plan(plan)["ord"]
+    items = _sensitivity_items(plan, step)[:top_n]
+    contribs = [(x["label"], x["delta_high"]) for x in items]
+    labels = ["ベースORD"] + [lbl for lbl, _ in contribs] + ["概算ORD（+step適用）"]
+    vals = [base_ord] + [v for _, v in contribs] + [0.0]
+    cum = [vals[0]]
+    for v in vals[1:-1]:
+        cum.append(cum[-1] + v)
+    final = cum[-1]
+    vals[-1] = final - base_ord
+
+    fig_h_in = max(height_px / 96.0, 2 / 3)
+    fig, ax = plt.subplots(figsize=(7, fig_h_in))
+    colors = []
+    for i, v in enumerate(vals):
+        if i == 0 or i == len(vals) - 1:
+            colors.append("#0B3D91")
+        else:
+            colors.append("#0B3D91" if v >= 0 else "#9E9E9E")
+
+    ax.bar(range(len(vals)), vals, color=colors)
+    ax.axhline(0, color="#D0D0D0", linewidth=0.8)
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=(8 if compact else 10))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"¥{x:,.0f}"))
+    ax.set_ylabel("寄与（累積）", fontsize=(9 if compact else 11))
+
+    if show_values:
+        ref = max(1.0, max(abs(v) for v in vals))
+        for i, v in enumerate(vals):
+            ax.text(i, v + (0.02 * ref if v >= 0 else -0.02 * ref),
+                    format_money(v), ha="center",
+                    va="bottom" if v >= 0 else "top",
+                    fontsize=(8 if compact else 10))
+
+    fig.tight_layout()
+    st.pyplot(fig, use_container_width=True)
+
+
+def render_sensitivity_view(plan: dict):
+    """感応度分析ビューの統括（俯瞰性改善＋ウォーターフォール追加）"""
+    opt = build_sensitivity_view_options()
+    if opt["viz"].startswith("トルネード"):
+        render_tornado_compact(plan, opt["step"], opt["top_n"], opt["height_px"],
+                               opt["compact"], opt["show_values"])
+    else:
+        render_sensitivity_waterfall(plan, opt["step"], opt["top_n"], opt["height_px"],
+                                     opt["compact"], opt["show_values"])
+
 # --- EXCEL JP LOCALE
 def apply_japanese_styles(wb) -> None:
     """ヘッダ太字・中央揃え、列幅自動調整、1行目固定"""
@@ -219,6 +363,31 @@ def format_money(x, unit="百万円"):
         return f"{thousands(x):,.0f}"
     else:
         return f"{x:,.0f}"
+
+
+def compute_plan(plan: dict) -> dict:
+    """Aggregate plan calculation returning ordinary profit.
+
+    Parameters
+    ----------
+    plan: dict
+        Dictionary containing at minimum the keys ``sales``, ``gp_rate``,
+        ``opex_h``, ``opex_fixed``, ``opex_dep`` and ``opex_oth``.
+
+    Returns
+    -------
+    dict
+        A dictionary with the key ``ord`` representing ordinary profit.
+    """
+    sales = float(plan.get("sales", 0.0))
+    gp_rate = float(plan.get("gp_rate", 0.0))
+    gross = sales * gp_rate
+    opex_h = float(plan.get("opex_h", 0.0))
+    opex_fixed = float(plan.get("opex_fixed", 0.0))
+    opex_dep = float(plan.get("opex_dep", 0.0))
+    opex_oth = float(plan.get("opex_oth", 0.0))
+    ord_profit = gross - opex_h - opex_fixed - opex_dep - opex_oth
+    return {"ord": ord_profit}
 
 class PlanConfig:
     def __init__(self, base_sales: float, fte: float, unit: str) -> None:
@@ -833,58 +1002,17 @@ with tab_scen:
 
 with tab_analysis:
     _set_jp_font()
-    st.subheader("感応度分析｜経常利益（ORD）への影響")
-    st.caption("主要ドライバを±の変化で同時に比較（トルネード図）。スライダーで変化幅を指定してください。")
-    c1, c2, c3, c4 = st.columns(4)
-    pct_sales = c1.slider("売上高 変化率（±%）", min_value=0.0, max_value=50.0, value=10.0, step=1.0) / 100.0
-    pt_gross = c2.slider("粗利率 変化（±pt）", min_value=0.0, max_value=10.0, value=1.0, step=0.5) / 100.0
-    pct_personnel = c3.slider("人件費 変化率（±%）", min_value=0.0, max_value=50.0, value=10.0, step=1.0) / 100.0
-    pct_expense = c4.slider("経費 変化率（±%）", min_value=0.0, max_value=50.0, value=10.0, step=1.0) / 100.0
-
     base_amt = compute(base_plan, amount_overrides=st.session_state.get("overrides", {}))
-    base_op = base_amt["ORD"]
-
-    def op_with_changes(ds=0.0, dgross_pt=0.0, dH=0.0, dK=0.0):
-        plan = base_plan.clone()
-        S = plan.base_sales * (1.0 + ds)
-
-        overrides = st.session_state.get("overrides", {}).copy()
-        if abs(dgross_pt) > 0:
-            delta_e = -dgross_pt * S
-            overrides["COGS_OTH"] = max(0.0, compute(plan, sales_override=S, amount_overrides=overrides)["COGS_OTH"] + delta_e)
-
-        if "OPEX_H" in overrides and overrides["OPEX_H"] > 0:
-            overrides["OPEX_H"] = overrides["OPEX_H"] * (1.0 + dH)
-        else:
-            val = compute(plan, sales_override=S, amount_overrides=overrides)["OPEX_H"]
-            overrides["OPEX_H"] = max(0.0, val * (1.0 + dH))
-        if "OPEX_K" in overrides and overrides["OPEX_K"] > 0:
-            overrides["OPEX_K"] = overrides["OPEX_K"] * (1.0 + dK)
-        else:
-            val = compute(plan, sales_override=S, amount_overrides=overrides)["OPEX_K"]
-            overrides["OPEX_K"] = max(0.0, val * (1.0 + dK))
-
-        return compute(plan, sales_override=S, amount_overrides=overrides)["ORD"]
-
-    changes = [
-        ("売上高 +", op_with_changes(ds=+pct_sales) - base_op),
-        ("売上高 -", op_with_changes(ds=-pct_sales) - base_op),
-        ("粗利率 +", op_with_changes(dgross_pt=+pt_gross) - base_op),
-        ("粗利率 -", op_with_changes(dgross_pt=-pt_gross) - base_op),
-        ("人件費 +", op_with_changes(dH=+pct_personnel) - base_op),
-        ("人件費 -", op_with_changes(dH=-pct_personnel) - base_op),
-        ("経費 +", op_with_changes(dK=+pct_expense) - base_op),
-        ("経費 -", op_with_changes(dK=-pct_expense) - base_op),
-    ]
-    changes_sorted = sorted(changes, key=lambda x: abs(x[1]), reverse=True)
-    df_chg = pd.DataFrame({"ドライバ": [k for k, _ in changes_sorted], "OP変化（円）": [v for _, v in changes_sorted]})
-    render_tornado_mckinsey(
-        changes_sorted,
-        "トルネード図｜経常利益（ORD）への影響",
-        "円",
-        style=plot_style,
-    )
-    st.dataframe(df_chg, use_container_width=True)
+    plan_inputs = {
+        "sales": base_amt["REV"],
+        "gp_rate": (base_amt["GROSS"] / base_amt["REV"]) if base_amt["REV"] else 0.0,
+        "opex_h": base_amt["OPEX_H"],
+        "opex_fixed": base_amt["OPEX_K"],
+        "opex_dep": base_amt["OPEX_DEP"],
+        "opex_oth": -(base_amt["NOI_MISC"] + base_amt["NOI_GRANT"] + base_amt["NOI_OTH"]
+                       - base_amt["NOE_INT"] - base_amt["NOE_OTH"]),
+    }
+    render_sensitivity_view(plan_inputs)
 
 with tab_export:
     st.subheader("エクスポート")
