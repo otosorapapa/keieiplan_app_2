@@ -5,7 +5,7 @@ import numpy as np
 import io
 import math
 import datetime as dt
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Any
 import openpyxl  # noqa: F401  # Ensure Excel engine is available
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -38,6 +38,19 @@ DEFAULTS = {
     "noe_oth_rate": 0.0,
     "unit": "百万円",
     "fiscal_year": 2025
+}
+
+PLOT_STYLE_DEFAULT: Dict[str, Any] = {
+    "figure_bg": "#FFFFFF",
+    "axes_bg": "#FFFFFF",
+    "grid": True,
+    "grid_color": "#CCCCCC",
+    "pos_color": "#1f77b4",
+    "neg_color": "#d62728",
+    "node_size": 10,
+    "font_color": "#000000",
+    "font_size": 10,
+    "alpha": 0.9,
 }
 
 ITEMS = [
@@ -82,8 +95,24 @@ def _set_jp_font() -> None:
             continue
     mpl.rcParams["axes.unicode_minus"] = False
 
-def render_tornado_mckinsey(changes: List[Tuple[str, float]], title: str, unit_label: str) -> None:
+def render_tornado_mckinsey(
+    changes: List[Tuple[str, float]],
+    title: str,
+    unit_label: str,
+    style: Dict[str, Any] | None = None,
+) -> None:
     """マッキンゼー風トルネード図を描画しPNGダウンロードボタンを表示"""
+    style = style or {}
+    fig_bg = style.get("figure_bg", PLOT_STYLE_DEFAULT["figure_bg"])
+    axes_bg = style.get("axes_bg", PLOT_STYLE_DEFAULT["axes_bg"])
+    grid_on = style.get("grid", PLOT_STYLE_DEFAULT["grid"])
+    grid_color = style.get("grid_color", PLOT_STYLE_DEFAULT["grid_color"])
+    pos_color = style.get("pos_color", PLOT_STYLE_DEFAULT["pos_color"])
+    neg_color = style.get("neg_color", PLOT_STYLE_DEFAULT["neg_color"])
+    node_size = style.get("node_size", PLOT_STYLE_DEFAULT["node_size"])
+    font_color = style.get("font_color", PLOT_STYLE_DEFAULT["font_color"])
+    font_size = style.get("font_size", PLOT_STYLE_DEFAULT["font_size"])
+    alpha = style.get("alpha", PLOT_STYLE_DEFAULT["alpha"])
     if not changes:
         st.warning("表示するデータがありません。")
         return
@@ -96,18 +125,26 @@ def render_tornado_mckinsey(changes: List[Tuple[str, float]], title: str, unit_l
         return
     lim = max_abs * 1.1
     fig, ax = plt.subplots(figsize=(6, 0.45 * len(values) + 1))
+    fig.patch.set_facecolor(fig_bg)
+    ax.set_facecolor(axes_bg)
     y = np.arange(len(values))
-    colors = ["#0B3D91" if v >= 0 else "#9E9E9E" for v in values]
-    bars = ax.barh(y, values, color=colors)
+    colors = [pos_color if v >= 0 else neg_color for v in values]
+    bars = ax.barh(y, values, color=colors, alpha=alpha)
     ax.set_yticks(y, labels)
     ax.set_xlim(-lim, lim)
-    ax.axvline(0, color="#B0B0B0", linewidth=0.8)
+    ax.axvline(0, color=grid_color, linewidth=0.8)
+    if grid_on:
+        ax.grid(color=grid_color, axis="x", linewidth=0.5, linestyle="--")
+    else:
+        ax.grid(False)
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
     for spine in ("left", "bottom"):
-        ax.spines[spine].set_color("#D0D0D0")
+        ax.spines[spine].set_color(grid_color)
         ax.spines[spine].set_linewidth(0.5)
     ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"¥{x:,.0f}"))
+    ax.tick_params(axis="x", colors=font_color, labelsize=font_size)
+    ax.tick_params(axis="y", colors=font_color, labelsize=font_size)
     ellipsis = False
     for bar, v in zip(bars, values):
         txt = f"{'+' if v >= 0 else '-'}¥{abs(v):,}"
@@ -121,10 +158,12 @@ def render_tornado_mckinsey(changes: List[Tuple[str, float]], title: str, unit_l
             ha="left" if v >= 0 else "right",
             va="center",
             clip_on=False,
+            color=font_color,
+            fontsize=node_size,
         )
-    ax.set_title(title)
+    ax.set_title(title, color=font_color, fontsize=font_size + 2)
     fig.tight_layout()
-    fig.text(0.5, -0.02, "注：右=利益増、左=利益減", ha="center", fontsize=9)
+    fig.text(0.5, -0.02, "注：右=利益増、左=利益減", ha="center", fontsize=font_size - 1, color=font_color)
     st.pyplot(fig, use_container_width=True)
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=200, bbox_inches="tight")
@@ -512,6 +551,32 @@ with st.sidebar:
         pct_step=0.0005,
     )
 
+    st.markdown("---")
+    st.header("🎨 グラフスタイル")
+    fig_bg = st.color_picker("図背景色", PLOT_STYLE_DEFAULT["figure_bg"])
+    axes_bg = st.color_picker("枠背景色", PLOT_STYLE_DEFAULT["axes_bg"])
+    show_grid = st.checkbox("グリッド線を表示", value=PLOT_STYLE_DEFAULT["grid"])
+    grid_color = st.color_picker("グリッド線色", PLOT_STYLE_DEFAULT["grid_color"])
+    pos_color = st.color_picker("増加色", PLOT_STYLE_DEFAULT["pos_color"])
+    neg_color = st.color_picker("減少色", PLOT_STYLE_DEFAULT["neg_color"])
+    node_size = st.slider("ノードサイズ", 1, 30, PLOT_STYLE_DEFAULT["node_size"])
+    font_color = st.color_picker("フォント色", PLOT_STYLE_DEFAULT["font_color"])
+    font_size = st.slider("フォントサイズ", 6, 24, PLOT_STYLE_DEFAULT["font_size"])
+    alpha = st.slider("透過度", 0.0, 1.0, PLOT_STYLE_DEFAULT["alpha"], 0.05)
+
+plot_style = {
+    "figure_bg": fig_bg,
+    "axes_bg": axes_bg,
+    "grid": show_grid,
+    "grid_color": grid_color,
+    "pos_color": pos_color,
+    "neg_color": neg_color,
+    "node_size": node_size,
+    "font_color": font_color,
+    "font_size": font_size,
+    "alpha": alpha,
+}
+
 base_plan = PlanConfig(base_sales=base_sales, fte=fte, unit=unit)
 
 
@@ -813,7 +878,12 @@ with tab_analysis:
     ]
     changes_sorted = sorted(changes, key=lambda x: abs(x[1]), reverse=True)
     df_chg = pd.DataFrame({"ドライバ": [k for k, _ in changes_sorted], "OP変化（円）": [v for _, v in changes_sorted]})
-    render_tornado_mckinsey(changes_sorted, "トルネード図｜経常利益（ORD）への影響", "円")
+    render_tornado_mckinsey(
+        changes_sorted,
+        "トルネード図｜経常利益（ORD）への影響",
+        "円",
+        style=plot_style,
+    )
     st.dataframe(df_chg, use_container_width=True)
 
 with tab_export:
