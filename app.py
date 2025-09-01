@@ -53,6 +53,14 @@ PLOT_STYLE_DEFAULT: Dict[str, Any] = {
     "alpha": 0.9,
 }
 
+# --- 営業外の既定値（必要に応じてサイドバー入力にしても良い） ---
+NONOP_DEFAULT = dict(
+    noi_misc=0.0,
+    noi_grant=0.0,
+    noe_int=0.0,
+    noe_oth=0.0,
+)
+
 ITEMS = [
     ("REV", "売上高", "売上"),
     ("COGS_MAT", "外部仕入｜材料費", "外部仕入"),
@@ -366,18 +374,10 @@ def format_money(x, unit="百万円"):
 
 
 def compute_plan(plan: dict) -> dict:
-    """Aggregate plan calculation returning ordinary profit.
+    """簡易計画計算。
 
-    Parameters
-    ----------
-    plan: dict
-        Dictionary containing at minimum the keys ``sales``, ``gp_rate``,
-        ``opex_h``, ``opex_fixed``, ``opex_dep`` and ``opex_oth``.
-
-    Returns
-    -------
-    dict
-        A dictionary with the key ``ord`` representing ordinary profit.
+    sales, gp_rate, 各種費用を受け取り、粗利や営業利益を算出する。
+    戻り値には計算過程の主要項目を含める。
     """
     sales = float(plan.get("sales", 0.0))
     gp_rate = float(plan.get("gp_rate", 0.0))
@@ -386,8 +386,132 @@ def compute_plan(plan: dict) -> dict:
     opex_fixed = float(plan.get("opex_fixed", 0.0))
     opex_dep = float(plan.get("opex_dep", 0.0))
     opex_oth = float(plan.get("opex_oth", 0.0))
-    ord_profit = gross - opex_h - opex_fixed - opex_dep - opex_oth
-    return {"ord": ord_profit}
+    op = gross - opex_h - opex_fixed - opex_dep - opex_oth
+    return {
+        "sales": sales,
+        "gp_rate": gp_rate,
+        "gross": gross,
+        "opex_h": opex_h,
+        "opex_fixed": opex_fixed,
+        "opex_dep": opex_dep,
+        "opex_oth": opex_oth,
+        "op": op,
+        "ord": op,
+    }
+
+
+def _ord_from(res: dict, nonop: dict) -> float:
+    """OP と 営業外から ORD を算出"""
+    noi = (nonop.get("noi_misc", 0.0) + nonop.get("noi_grant", 0.0))
+    noe = (nonop.get("noe_int", 0.0) + nonop.get("noe_oth", 0.0))
+    return res["op"] + noi - noe
+
+
+def _plan_with(plan: dict, **overrides) -> dict:
+    p = plan.copy()
+    p.update(overrides)
+    return p
+
+
+def _line_items(res: dict, nonop: dict) -> dict:
+    """行定義を一元化（REV/COGS/GROSS/OPEX/OP/営業外/ORD）"""
+    rev = res["sales"]
+    gross = res["gross"]
+    cogs_ttl = rev - gross
+    opex_ttl = res["opex_fixed"] + res["opex_h"] + res["opex_dep"] + res["opex_oth"]
+    ord_v = _ord_from(res, nonop)
+    return {
+        "REV": rev,
+        "COGS_TTL": cogs_ttl,
+        "GROSS": gross,
+        "OPEX_H": res["opex_h"],
+        "OPEX_FIXED": res["opex_fixed"],
+        "OPEX_DEP": res["opex_dep"],
+        "OPEX_OTH": res["opex_oth"],
+        "OPEX_TTL": opex_ttl,
+        "OP": res["op"],
+        "NOI_MISC": nonop.get("noi_misc", 0.0),
+        "NOI_GRANT": nonop.get("noi_grant", 0.0),
+        "NOE_INT": nonop.get("noe_int", 0.0),
+        "NOE_OTH": nonop.get("noe_oth", 0.0),
+        "ORD": ord_v,
+    }
+
+
+def _required_sales_for_ord(target_ord: float, plan: dict, nonop: dict) -> float:
+    gp = max(1e-9, float(plan["gp_rate"]))
+    opex_ttl = plan["opex_fixed"] + plan["opex_h"] + plan["opex_dep"] + plan["opex_oth"]
+    noi = nonop.get("noi_misc", 0.0) + nonop.get("noi_grant", 0.0)
+    noe = nonop.get("noe_int", 0.0) + nonop.get("noe_oth", 0.0)
+    return (target_ord + opex_ttl - noi + noe) / gp
+
+
+def _be_sales(plan: dict, nonop: dict, *, mode: str = "OP") -> float:
+    gp = max(1e-9, float(plan["gp_rate"]))
+    opex_ttl = plan["opex_fixed"] + plan["opex_h"] + plan["opex_dep"] + plan["opex_oth"]
+    noi = nonop.get("noi_misc", 0.0) + nonop.get("noi_grant", 0.0)
+    noe = nonop.get("noe_int", 0.0) + nonop.get("noe_oth", 0.0)
+    if mode == "ORD":
+        return (opex_ttl - noi + noe) / gp
+    return opex_ttl / gp
+
+
+def build_scenario_dataframe(base_plan: dict, plan: dict,
+                             nonop: dict | None = None,
+                             target_ord: float = 50_000_000,
+                             be_mode: str = "OP") -> pd.DataFrame:
+    nonop = NONOP_DEFAULT if nonop is None else nonop
+
+    # ① 目標
+    res_target = compute_plan(plan)
+    col_target = _line_items(res_target, nonop)
+
+    # ②〜④ 売上スケール
+    def col_sales_scale(scale: float):
+        p = _plan_with(plan, sales=plan["sales"] * scale)
+        return _line_items(compute_plan(p), nonop)
+
+    col_sales_up10 = col_sales_scale(1.10)
+    col_sales_dn5 = col_sales_scale(0.95)
+    col_sales_dn10 = col_sales_scale(0.90)
+
+    # ⑤ 粗利率+1pt
+    p_gp_up = _plan_with(plan, gp_rate=min(1.0, plan["gp_rate"] + 0.01))
+    col_gp_up = _line_items(compute_plan(p_gp_up), nonop)
+
+    # ⑥ 目標経常
+    req_sales = max(0.0, _required_sales_for_ord(target_ord, plan, nonop))
+    p_ord = _plan_with(plan, sales=req_sales)
+    col_ord = _line_items(compute_plan(p_ord), nonop)
+
+    # ⑦ 昨年同一
+    col_last = _line_items(compute_plan(base_plan), nonop)
+
+    # ⑧ 損益分岐点売上
+    be_sales = max(0.0, _be_sales(plan, nonop, mode=be_mode))
+    p_be = _plan_with(plan, sales=be_sales)
+    col_be = _line_items(compute_plan(p_be), nonop)
+
+    df = pd.DataFrame.from_dict({
+        "目標": col_target,
+        "売上高10%増": col_sales_up10,
+        "売上高5%減": col_sales_dn5,
+        "売上高10%減": col_sales_dn10,
+        "粗利率+1pt": col_gp_up,
+        "経常利益5千万円": col_ord,
+        "昨年同一": col_last,
+        "損益分岐点売上高": col_be,
+    }, orient="index").T
+    return df
+
+
+def render_scenario_table(base_plan: dict, plan: dict,
+                          nonop: dict | None = None,
+                          *, target_ord: float = 50_000_000,
+                          be_mode: str = "OP"):
+    st.subheader("📊 シナリオ比較（是正版）")
+    df = build_scenario_dataframe(base_plan, plan, nonop, target_ord, be_mode)
+    st.dataframe(df.style.format("{:,.1f}"), use_container_width=True)
 
 class PlanConfig:
     def __init__(self, base_sales: float, fte: float, unit: str) -> None:
@@ -1002,6 +1126,16 @@ with tab_scen:
 
 with tab_analysis:
     _set_jp_font()
+    base_amt_raw = compute(base_plan)
+    base_plan_inputs = {
+        "sales": base_amt_raw["REV"],
+        "gp_rate": (base_amt_raw["GROSS"] / base_amt_raw["REV"]) if base_amt_raw["REV"] else 0.0,
+        "opex_h": base_amt_raw["OPEX_H"],
+        "opex_fixed": base_amt_raw["OPEX_K"],
+        "opex_dep": base_amt_raw["OPEX_DEP"],
+        "opex_oth": -(base_amt_raw["NOI_MISC"] + base_amt_raw["NOI_GRANT"] + base_amt_raw["NOI_OTH"]
+                       - base_amt_raw["NOE_INT"] - base_amt_raw["NOE_OTH"]),
+    }
     base_amt = compute(base_plan, amount_overrides=st.session_state.get("overrides", {}))
     plan_inputs = {
         "sales": base_amt["REV"],
@@ -1012,6 +1146,8 @@ with tab_analysis:
         "opex_oth": -(base_amt["NOI_MISC"] + base_amt["NOI_GRANT"] + base_amt["NOI_OTH"]
                        - base_amt["NOE_INT"] - base_amt["NOE_OTH"]),
     }
+    render_scenario_table(base_plan_inputs, plan_inputs, NONOP_DEFAULT,
+                          target_ord=50_000_000, be_mode="OP")
     render_sensitivity_view(plan_inputs)
 
 with tab_export:
