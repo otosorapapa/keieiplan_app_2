@@ -354,7 +354,7 @@ def format_money_and_percent(ws, money_cols: List[int], percent_cols: List[int])
     for c in percent_cols:
         col_letter = get_column_letter(c)
         for cell in ws[col_letter][1:]:
-            cell.number_format = "0.0%"
+            cell.number_format = "0%"
 
 def millions(x):
     return x / 1_000_000
@@ -366,7 +366,7 @@ def format_money(x, unit="百万円"):
     if x is None or (isinstance(x, float) and (np.isnan(x) or np.isinf(x))):
         return "—"
     if unit == "百万円":
-        return f"{millions(x):,.1f}"
+        return f"{millions(x):,.0f}"
     elif unit == "千円":
         return f"{thousands(x):,.0f}"
     else:
@@ -511,7 +511,7 @@ def render_scenario_table(base_plan: dict, plan: dict,
                           be_mode: str = "OP"):
     st.subheader("📊 シナリオ比較（是正版）")
     df = build_scenario_dataframe(base_plan, plan, nonop, target_ord, be_mode)
-    st.dataframe(df.style.format("{:,.1f}"), use_container_width=True)
+    st.dataframe(df.style.format("{:,.0f}"), use_container_width=True)
 
 class PlanConfig:
     def __init__(self, base_sales: float, fte: float, unit: str) -> None:
@@ -577,7 +577,7 @@ def dual_input_row(label: str, base_sales: float, *,
         rate = amount / base_sales if base_sales > 0 else 0.0
         if not math.isfinite(rate):
             rate = 0.0
-        st.caption(f"率 {rate*100:.1f}%")
+        st.caption(f"率 {rate*100:.0f}%")
         return {"method": "amount", "value": amount}
 
 def compute(plan: PlanConfig, sales_override: float | None = None, amount_overrides: Dict[str, float] | None = None) -> Dict[str, float]:
@@ -913,7 +913,7 @@ with tab_input:
     c6.metric("一人当たり売上", f"{format_money(base_amt['PC_SALES'], base_plan.unit)} {base_plan.unit}")
     c7.metric("一人当たり粗利", f"{format_money(base_amt['PC_GROSS'], base_plan.unit)} {base_plan.unit}")
     ldr = base_amt["LDR"]
-    ldr_str = "—" if (ldr is None or not math.isfinite(ldr)) else f"{ldr*100:.1f}%"
+    ldr_str = "—" if (ldr is None or not math.isfinite(ldr)) else f"{ldr*100:.0f}%"
     c8.metric("労働分配率", ldr_str)
 
     rows = []
@@ -1095,7 +1095,7 @@ def scenario_table(plan: PlanConfig, unit: str, overrides: Dict[str, float]) -> 
     for k in kpis.keys():
         if k == "LDR":
             val = base_amt.get("LDR", float("nan"))
-            kpis[k].append(f"{val*100:.1f}%" if val == val else "—")
+            kpis[k].append(f"{val*100:.0f}%" if val == val else "—")
         else:
             kpis[k].append(format_money(base_amt.get(k, 0.0), unit))
 
@@ -1108,7 +1108,7 @@ def scenario_table(plan: PlanConfig, unit: str, overrides: Dict[str, float]) -> 
         for k in kpis.keys():
             if k == "LDR":
                 v = scn_amt.get("LDR", float("nan"))
-                kpis[k].append(f"{v*100:.1f}%" if v == v else "—")
+                kpis[k].append(f"{v*100:.0f}%" if v == v else "—")
             else:
                 kpis[k].append(format_money(scn_amt.get(k, 0.0), unit))
 
@@ -1259,7 +1259,7 @@ with tab_export:
             for r in range(2, ws.max_row + 1):
                 if ws.cell(row=r, column=1).value == "労働分配率":
                     for c in range(2, ws.max_column + 1):
-                        ws.cell(row=r, column=c).number_format = "0.0%"
+                        ws.cell(row=r, column=c).number_format = "0%"
                 else:
                     for c in range(2, ws.max_column + 1):
                         ws.cell(row=r, column=c).number_format = money_fmt
