@@ -182,6 +182,105 @@ button[kind="primary"]:hover {{
     line-height: 1.55;
 }}
 
+div[data-testid="stDataFrame"] table {{
+    border-spacing: 0;
+    color: var(--text-color);
+}}
+
+div[data-testid="stDataFrame"] table thead th {{
+    background: rgba(31, 78, 121, 0.08);
+    color: var(--primary);
+    font-weight: 600;
+    border-bottom: 1px solid rgba(31, 78, 121, 0.18);
+}}
+
+div[data-testid="stDataFrame"] table tbody tr:nth-child(even) {{
+    background: rgba(31, 78, 121, 0.04);
+}}
+
+div[data-testid="stDataFrame"] table tbody tr:hover {{
+    background: rgba(242, 197, 124, 0.16);
+    transition: background 0.2s ease;
+}}
+
+.cost-pill {{
+    background: linear-gradient(135deg, rgba(79, 131, 179, 0.16) 0%, rgba(31, 78, 121, 0.08) 100%);
+    border-radius: 18px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    border: 1px solid rgba(31, 78, 121, 0.12);
+}}
+
+.cost-pill.positive {{
+    background: linear-gradient(135deg, rgba(112, 169, 161, 0.18) 0%, rgba(112, 169, 161, 0.08) 100%);
+    border-color: rgba(112, 169, 161, 0.3);
+}}
+
+.cost-pill.accent {{
+    background: linear-gradient(135deg, rgba(242, 197, 124, 0.18) 0%, rgba(242, 197, 124, 0.1) 100%);
+    border-color: rgba(242, 197, 124, 0.32);
+}}
+
+.cost-pill strong {{
+    font-size: 1.05rem;
+    color: var(--primary);
+}}
+
+.cost-pill span {{
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-color);
+}}
+
+.cost-pill small {{
+    font-size: 0.85rem;
+    color: var(--text-subtle);
+}}
+
+.glossary-card {{
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(232, 241, 250, 0.95) 100%);
+    border-radius: 18px;
+    padding: 1.2rem 1.4rem;
+    box-shadow: 0 10px 26px rgba(31, 78, 121, 0.06);
+    border: 1px solid rgba(31, 78, 121, 0.08);
+    margin-top: 1.2rem;
+}}
+
+.glossary-card h4 {{
+    margin: 0 0 0.6rem 0;
+    color: var(--primary);
+}}
+
+.glossary-card ul {{
+    margin: 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 0.45rem;
+}}
+
+.glossary-card li {{
+    list-style: none;
+    background: rgba(31, 78, 121, 0.05);
+    border-radius: 12px;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid rgba(31, 78, 121, 0.08);
+}}
+
+.glossary-card li strong {{
+    display: block;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 0.15rem;
+}}
+
+.glossary-card li span {{
+    font-size: 0.92rem;
+    color: var(--text-subtle);
+}}
+
 .anomaly-table caption {{
     caption-side: top;
     font-weight: 600;
@@ -284,6 +383,52 @@ ITEMS = [
 
 # Mapping from item code to label for quick lookup
 ITEM_LABELS = {code: label for code, label, _ in ITEMS}
+
+PLAIN_LANGUAGE = {
+    "REV": "お客様から入る売上全体",  # Revenue
+    "COGS_MAT": "主原料や仕入にかかるコスト",
+    "COGS_LBR": "外部スタッフや職人さんへの人件費",
+    "COGS_OUT_SRC": "専属パートナーへの外注費",
+    "COGS_OUT_CON": "必要時だけ依頼するスポット外注費",
+    "COGS_OTH": "物流・包材などその他の変動費",
+    "COGS_TTL": "外部仕入コストの合計",
+    "GROSS": "売上から原価を引いた稼ぐ力（CT）",
+    "OPEX_H": "自社の人件費（給与・賞与など）",
+    "OPEX_K": "オフィス費や販売促進費などの経費",
+    "OPEX_DEP": "設備投資を分割計上した費用",
+    "OPEX_TTL": "内部費用の合計",
+    "OP": "本業だけで稼いだ利益",
+    "NOI_MISC": "本業以外の雑収入",
+    "NOI_GRANT": "補助金・給付金などの臨時収入",
+    "NOI_OTH": "その他の営業外収益",
+    "NOE_INT": "借入金などの利息支払",
+    "NOE_OTH": "その他の営業外費用",
+    "ORD": "金融費用も含めた最終的な利益",
+    "BE_SALES": "利益がプラスに転じる売上ライン",
+    "PC_SALES": "1人あたりの売上高",
+    "PC_GROSS": "1人あたりの粗利（CT）",
+    "PC_ORD": "1人あたりの経常利益",
+    "LDR": "粗利のうち人件費に充てている割合",
+}
+
+COST_PILL_ITEMS = [
+    ("COGS_MAT", "材料費", "製品づくりに必要な仕入原価", ""),
+    ("COGS_LBR", "外部人件費", "外部メンバーへの人件費", ""),
+    ("COGS_OUT_SRC", "協力会社費（専属）", "固定契約パートナーへの支払い", ""),
+    ("COGS_OUT_CON", "協力会社費（スポット）", "必要なタイミングだけの外注費", ""),
+    ("COGS_OTH", "その他原価", "物流費や包材などの付随コスト", ""),
+    ("COGS_TTL", "標準原価 合計", "外部仕入コストの総額", "accent"),
+    ("GROSS", "粗利（CT）", "原価を差し引いた稼ぐ力", "positive"),
+]
+
+GLOSSARY_ITEMS = [
+    {"term": "CT（粗利）", "description": "Contribution Marginの略。売上から変動費を引いた稼ぐ力を指します。"},
+    {"term": "標準原価", "description": "製品・サービスを提供するために想定される平均的な原価のこと。材料費や外注費を含みます。"},
+    {"term": "営業利益", "description": "本業でどれだけ利益が残ったかを示します。粗利から人件費や経費を差し引いた金額です。"},
+    {"term": "経常利益", "description": "営業利益に利息収支などの営業外項目を加減した企業全体の稼ぐ力です。"},
+    {"term": "損益分岐点売上高", "description": "利益がゼロになる境目の売上高。ここを超えると利益が積み上がります。"},
+    {"term": "労働分配率", "description": "粗利のうち、どれだけを人件費として従業員へ配分しているかを示す指標です。"},
+]
 
 # --- MCKINSEY TORNADO
 def _set_jp_font() -> None:
@@ -1426,31 +1571,131 @@ tab_input, tab_scen, tab_analysis, tab_ai, tab_export = st.tabs(
 with tab_input:
     st.subheader("単年利益計画（目標列）")
     base_amt = compute(base_plan)
+
+    def fmt_amount_with_unit(value: float) -> str:
+        formatted = format_money(value, base_plan.unit)
+        return formatted if formatted == "—" else f"{formatted} {base_plan.unit}"
+
     c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("売上高", f"{format_money(base_amt['REV'], base_plan.unit)} {base_plan.unit}")
-    c2.metric("粗利(加工高)", f"{format_money(base_amt['GROSS'], base_plan.unit)} {base_plan.unit}")
-    c3.metric("営業利益", f"{format_money(base_amt['OP'], base_plan.unit)} {base_plan.unit}")
-    c4.metric("経常利益", f"{format_money(base_amt['ORD'], base_plan.unit)} {base_plan.unit}")
-    be_label = "∞" if not math.isfinite(base_amt["BE_SALES"]) else f"{format_money(base_amt['BE_SALES'], base_plan.unit)} {base_plan.unit}"
+    c1.metric("売上高", fmt_amount_with_unit(base_amt["REV"]))
+    c2.metric("粗利(加工高)", fmt_amount_with_unit(base_amt["GROSS"]))
+    c3.metric("営業利益", fmt_amount_with_unit(base_amt["OP"]))
+    c4.metric("経常利益", fmt_amount_with_unit(base_amt["ORD"]))
+    be_label = "∞" if not math.isfinite(base_amt["BE_SALES"]) else fmt_amount_with_unit(base_amt["BE_SALES"])
     c5.metric("損益分岐点売上高", be_label)
 
     c6, c7, c8 = st.columns(3)
-    c6.metric("一人当たり売上", f"{format_money(base_amt['PC_SALES'], base_plan.unit)} {base_plan.unit}")
-    c7.metric("一人当たり粗利", f"{format_money(base_amt['PC_GROSS'], base_plan.unit)} {base_plan.unit}")
+    c6.metric("一人当たり売上", fmt_amount_with_unit(base_amt["PC_SALES"]))
+    c7.metric("一人当たり粗利", fmt_amount_with_unit(base_amt["PC_GROSS"]))
     ldr = base_amt["LDR"]
     ldr_str = "—" if (ldr is None or not math.isfinite(ldr)) else f"{ldr*100:.0f}%"
     c8.metric("労働分配率", ldr_str)
 
+    st.markdown("### 標準原価の見える化（中央ビュー）")
+    st.caption("サイドバーで設定した原価や費用がリアルタイムに反映され、売上に対するインパクトを一目で確認できます。")
+
+    revenue = float(base_amt.get("REV", 0.0))
+    cost_cards = []
+    for code, label, desc, extra_class in COST_PILL_ITEMS:
+        value = float(base_amt.get(code, 0.0) or 0.0)
+        ratio = value / revenue if revenue else float("nan")
+        cost_cards.append({
+            "code": code,
+            "label": label,
+            "desc": desc,
+            "value": value,
+            "ratio": ratio,
+            "class": extra_class,
+        })
+
+    pill_columns = st.columns(3)
+    for idx, card in enumerate(cost_cards):
+        col = pill_columns[idx % 3]
+        ratio_text = format_ratio(card["ratio"])
+        amount_text = fmt_amount_with_unit(card["value"])
+        pill_class = "cost-pill"
+        if card["class"]:
+            pill_class = f"{pill_class} {card['class']}"
+        pill_html = (
+            f"<div class='{pill_class}'>"
+            f"<strong>{card['label']}</strong>"
+            f"<span>{amount_text}</span>"
+            f"<small>{ratio_text} ／ {card['desc']}</small>"
+            "</div>"
+        )
+        col.markdown(pill_html, unsafe_allow_html=True)
+
+    cost_chart_cards = [
+        card
+        for card in cost_cards
+        if card["code"] in {"COGS_MAT", "COGS_LBR", "COGS_OUT_SRC", "COGS_OUT_CON", "COGS_OTH"}
+    ]
+    if revenue > 0 and any(card["value"] > 0 for card in cost_chart_cards):
+        _set_jp_font()
+        fig, ax = plt.subplots(figsize=(6.6, 0.55 * len(cost_chart_cards) + 1.2))
+        names = [card["label"] for card in cost_chart_cards]
+        shares = [max(0.0, card["ratio"]) * 100 if math.isfinite(card["ratio"]) else 0.0 for card in cost_chart_cards]
+        max_share = max(shares)
+        colors = [THEME_COLORS["primary_light"] if i % 2 == 0 else THEME_COLORS["primary"] for i in range(len(names))]
+        bars = ax.barh(names, shares, color=colors, alpha=0.9)
+        ax.set_xlabel("売上比率（%）")
+        ax.set_xlim(0, max_share * 1.25 if max_share > 0 else 5)
+        ax.grid(axis="x", linestyle="--", color="#D4DEE9", alpha=0.7)
+        ax.set_facecolor("white")
+        fig.patch.set_facecolor("white")
+        for bar, card in zip(bars, cost_chart_cards):
+            offset = max_share * 0.02 if max_share > 0 else 0.5
+            ax.text(
+                bar.get_width() + offset,
+                bar.get_y() + bar.get_height() / 2,
+                format_ratio(card["ratio"]),
+                va="center",
+                color=THEME_COLORS["text"],
+                fontsize=10,
+            )
+        st.pyplot(fig, use_container_width=True)
+        plt.close(fig)
+        st.caption("横棒グラフは売上100に対し、それぞれの標準原価がどれだけを占めるかを示します。")
+
+    cost_table = [
+        {
+            "コスト項目": card["label"],
+            "売上比率": format_ratio(card["ratio"]),
+            "金額": fmt_amount_with_unit(card["value"]),
+            "ひとことで": card["desc"],
+        }
+        for card in cost_cards
+    ]
+    st.dataframe(
+        pd.DataFrame(cost_table),
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.caption("カードと表はサイドバーの入力に連動して更新されます。粗利（CT）と標準原価のバランスを中央ビューで確認してください。")
+
+    st.markdown("### 主要項目（経営メモ付き）")
     rows = []
     for code, label, group in ITEMS:
         if code in ("PC_SALES", "PC_GROSS", "PC_ORD", "LDR", "BE_SALES"):
             continue
         val = base_amt[code]
-        rows.append({"項目": label, "金額": format_money(val, base_plan.unit)})
+        memo = PLAIN_LANGUAGE.get(code, "—")
+        rows.append({
+            "項目": label,
+            "経営メモ": memo,
+            "金額": fmt_amount_with_unit(val),
+        })
     df = pd.DataFrame(rows)
-    st.dataframe(df, use_container_width=True, height=min(520, 40 + 28*len(rows)))
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        height=min(520, 40 + 28 * len(rows)),
+    )
 
-    st.info("ヒント: サイドバーの％／実額・人員・売上を変えると、即座に計算結果が更新されます。さらに固定費や個別額を設定したい場合は、下の『金額上書き』を利用してください。")
+    st.info(
+        "ヒント: サイドバーの％／実額・人員・売上を調整すると、標準原価ビューと一覧表が即座に更新されます。固定費や個別額を設定したい場合は、下の『金額上書き』をご利用ください。"
+    )
 
     with st.expander("🔧 金額上書き（固定費/個別額の設定）", expanded=False):
         st.caption("金額が入力された項目は、率の指定より優先され固定費扱いになります。")
@@ -1485,8 +1730,19 @@ with tab_input:
                     continue
                 before = base_amt[code]
                 after = preview_amt[code]
-                rows2.append({"項目": label, "前": format_money(before, base_plan.unit), "後": format_money(after, base_plan.unit)})
-            st.dataframe(pd.DataFrame(rows2), use_container_width=True)
+                rows2.append({
+                    "項目": label,
+                    "経営メモ": PLAIN_LANGUAGE.get(code, "—"),
+                    "前": fmt_amount_with_unit(before),
+                    "後": fmt_amount_with_unit(after),
+                })
+            st.dataframe(pd.DataFrame(rows2), use_container_width=True, hide_index=True)
+
+    glossary_html = "<div class='glossary-card'><h4>用語ミニガイド</h4><ul>"
+    for item in GLOSSARY_ITEMS:
+        glossary_html += f"<li><strong>{item['term']}</strong><span>{item['description']}</span></li>"
+    glossary_html += "</ul></div>"
+    st.markdown(glossary_html, unsafe_allow_html=True)
 
 def scenario_table(plan: PlanConfig, unit: str, overrides: Dict[str, float]) -> Tuple[pd.DataFrame, pd.DataFrame, List[Tuple[str, Dict[str, float]]]]:
     # --- SCENARIO UX
@@ -1519,6 +1775,10 @@ def scenario_table(plan: PlanConfig, unit: str, overrides: Dict[str, float]) -> 
         },
     )
     st.session_state["scenario_df"] = editor.copy()
+
+    def fmt_with_unit(value: float) -> str:
+        text = format_money(value, unit)
+        return text if text == "—" else f"{text} {unit}"
 
     def apply_driver(plan: PlanConfig, spec: Dict[str, float], overrides_local: Dict[str, float]):
         t = spec["type"]
@@ -1596,11 +1856,11 @@ def scenario_table(plan: PlanConfig, unit: str, overrides: Dict[str, float]) -> 
         S_override, ov, pre_amt = apply_driver(plan, spec, overrides)
         amt_prev = compute(plan, sales_override=S_override, amount_overrides=ov) if pre_amt is None else pre_amt
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("REV", f"{format_money(amt_prev['REV'], unit)} {unit}")
-        c2.metric("GROSS", f"{format_money(amt_prev['GROSS'], unit)} {unit}")
-        c3.metric("ORD", f"{format_money(amt_prev['ORD'], unit)} {unit}")
-        be_lbl = "∞" if not math.isfinite(amt_prev['BE_SALES']) else f"{format_money(amt_prev['BE_SALES'], unit)} {unit}"
-        c4.metric("BE_SALES", be_lbl)
+        c1.metric("売上高", fmt_with_unit(amt_prev["REV"]))
+        c2.metric("粗利（CT）", fmt_with_unit(amt_prev["GROSS"]))
+        c3.metric("経常利益", fmt_with_unit(amt_prev["ORD"]))
+        be_lbl = "∞" if not math.isfinite(amt_prev["BE_SALES"]) else fmt_with_unit(amt_prev["BE_SALES"])
+        c4.metric("損益分岐点売上高", be_lbl)
 
     editable = []
     for _, row in editor.iterrows():
@@ -1609,9 +1869,19 @@ def scenario_table(plan: PlanConfig, unit: str, overrides: Dict[str, float]) -> 
         val = None if val is None or (isinstance(val, float) and (np.isnan(val) or np.isinf(val))) else float(val)
         editable.append((row["名称"], {"type": typ_code, "value": val}))
 
-    cols = ["項目"] + [nm for nm, _ in editable]
-    rows = {code: [label] for code, label, _ in ITEMS if code not in ("PC_SALES", "PC_GROSS", "PC_ORD", "LDR", "BE_SALES")}
-    kpis = {"BE_SALES": ["損益分岐点売上高"], "PC_SALES": ["一人当たり売上"], "PC_GROSS": ["一人当たり粗利"], "PC_ORD": ["一人当たり経常利益"], "LDR": ["労働分配率"]}
+    cols = ["項目", "経営メモ"] + [nm for nm, _ in editable]
+    rows = {
+        code: [label, PLAIN_LANGUAGE.get(code, "—")]
+        for code, label, _ in ITEMS
+        if code not in ("PC_SALES", "PC_GROSS", "PC_ORD", "LDR", "BE_SALES")
+    }
+    kpis = {
+        "BE_SALES": ["損益分岐点売上高", PLAIN_LANGUAGE.get("BE_SALES", "—")],
+        "PC_SALES": ["一人当たり売上", PLAIN_LANGUAGE.get("PC_SALES", "—")],
+        "PC_GROSS": ["一人当たり粗利", PLAIN_LANGUAGE.get("PC_GROSS", "—")],
+        "PC_ORD": ["一人当たり経常利益", PLAIN_LANGUAGE.get("PC_ORD", "—")],
+        "LDR": ["労働分配率", PLAIN_LANGUAGE.get("LDR", "—")],
+    }
 
     base_amt = compute(plan, amount_overrides=overrides)
     for code, label, _ in ITEMS:
@@ -1640,9 +1910,9 @@ def scenario_table(plan: PlanConfig, unit: str, overrides: Dict[str, float]) -> 
     df1 = pd.DataFrame(rows.values(), columns=cols, index=rows.keys())
     df2 = pd.DataFrame(kpis.values(), columns=cols, index=kpis.keys())
     st.subheader("シナリオ比較（金額）")
-    st.dataframe(df1, use_container_width=True)
+    st.dataframe(df1, use_container_width=True, hide_index=True)
     st.subheader("KPI（損益分岐点・一人当たり・労働分配率）")
-    st.dataframe(df2, use_container_width=True)
+    st.dataframe(df2, use_container_width=True, hide_index=True)
     return df1, df2, editable
 
 
