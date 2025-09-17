@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 from openpyxl.styles import Font, Alignment
 from openpyxl.utils import get_column_letter
+import plotly.graph_objects as go
 
 st.set_page_config(
     page_title="経営計画策定（単年）｜Streamlit",
@@ -1373,157 +1374,192 @@ def bisection_for_target_op(plan: PlanConfig, target_op: float, s_low: float, s_
     mid = 0.5 * (low + high)
     return mid, compute(plan, sales_override=mid)
 
-# Sidebar
-mode = st.sidebar.radio(
-    "入力モード",
-    ["％（増減/売上対比）", "実額（円）"],
-    horizontal=True,
-    index=0,
-    key="input_mode",
-)
+st.markdown("## 🧭 マネジメント・コントロールハブ")
+with st.container(border=True):
+    st.caption("率と実額を切り替えながら、重要な経営レバーを中央エリアで一括コントロールできます。")
+    base_cols = st.columns([2.4, 1.3, 1.3], gap="large")
+    with base_cols[0]:
+        mode = st.radio(
+            "入力モード",
+            ["％（増減/売上対比）", "実額（円）"],
+            horizontal=True,
+            index=0,
+            key="input_mode",
+        )
+        st.caption("％指定で売上に対する構成比を直感的に管理。必要に応じてワンクリックで実額モードへ。")
+    with base_cols[1]:
+        fiscal_year = st.number_input("会計年度", value=int(DEFAULTS["fiscal_year"]), step=1, format="%d")
+        unit = st.selectbox("表示単位", ["百万円", "千円", "円"], index=0, help="計算は円ベース、表示のみ丸めます。")
+    with base_cols[2]:
+        base_sales = st.number_input(
+            "売上高（ベース）",
+            value=float(DEFAULTS["sales"]),
+            step=10_000_000.0,
+            min_value=0.0,
+            format="%.0f",
+        )
+        fte = st.number_input("人員数（FTE換算）", value=float(DEFAULTS["fte"]), step=1.0, min_value=0.0)
 
-with st.sidebar:
-    st.header("⚙️ 基本設定")
-    fiscal_year = st.number_input("会計年度", value=int(DEFAULTS["fiscal_year"]), step=1, format="%d")
-    unit = st.selectbox("表示単位", ["百万円", "千円", "円"], index=0, help="計算は円ベース、表示のみ丸めます。")
-    base_sales = st.number_input("売上高（ベース）", value=float(DEFAULTS["sales"]), step=10_000_000.0, min_value=0.0, format="%.0f")
-    fte = st.number_input("人員数（FTE換算）", value=float(DEFAULTS["fte"]), step=1.0, min_value=0.0)
+    st.markdown("#### 🎚️ コスト & 収益レバー")
+    st.caption("主要コストは3つのタブに整理。カテゴリごとにまとめたカードで、配分バランスを素早く再設計できます。")
+    tab_cost, tab_internal, tab_nonop = st.tabs(["外部仕入", "内部費用", "営業外 / 営業外費用"])
 
-    st.markdown("---")
-    st.caption("外部仕入")
-    cogs_mat_input = dual_input_row(
-        "材料費",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["cogs_mat_rate"]),
-        amount_default=base_sales * DEFAULTS["cogs_mat_rate"],
-        pct_step=0.01,
-    )
-    cogs_lbr_input = dual_input_row(
-        "労務費(外部)",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["cogs_lbr_rate"]),
-        amount_default=base_sales * DEFAULTS["cogs_lbr_rate"],
-        pct_step=0.01,
-    )
-    cogs_out_src_input = dual_input_row(
-        "外注費(専属)",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["cogs_out_src_rate"]),
-        amount_default=base_sales * DEFAULTS["cogs_out_src_rate"],
-        pct_step=0.01,
-    )
-    cogs_out_con_input = dual_input_row(
-        "外注費(委託)",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["cogs_out_con_rate"]),
-        amount_default=base_sales * DEFAULTS["cogs_out_con_rate"],
-        pct_step=0.01,
-    )
-    cogs_oth_input = dual_input_row(
-        "その他諸経費",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["cogs_oth_rate"]),
-        amount_default=base_sales * DEFAULTS["cogs_oth_rate"],
-        pct_step=0.005,
-    )
+    with tab_cost:
+        ext_row1 = st.columns(3, gap="large")
+        with ext_row1[0]:
+            cogs_mat_input = dual_input_row(
+                "材料費",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["cogs_mat_rate"]),
+                amount_default=base_sales * DEFAULTS["cogs_mat_rate"],
+                pct_step=0.01,
+            )
+        with ext_row1[1]:
+            cogs_lbr_input = dual_input_row(
+                "労務費(外部)",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["cogs_lbr_rate"]),
+                amount_default=base_sales * DEFAULTS["cogs_lbr_rate"],
+                pct_step=0.01,
+            )
+        with ext_row1[2]:
+            cogs_out_src_input = dual_input_row(
+                "外注費(専属)",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["cogs_out_src_rate"]),
+                amount_default=base_sales * DEFAULTS["cogs_out_src_rate"],
+                pct_step=0.01,
+            )
+        ext_row2 = st.columns(2, gap="large")
+        with ext_row2[0]:
+            cogs_out_con_input = dual_input_row(
+                "外注費(委託)",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["cogs_out_con_rate"]),
+                amount_default=base_sales * DEFAULTS["cogs_out_con_rate"],
+                pct_step=0.01,
+            )
+        with ext_row2[1]:
+            cogs_oth_input = dual_input_row(
+                "その他諸経費",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["cogs_oth_rate"]),
+                amount_default=base_sales * DEFAULTS["cogs_oth_rate"],
+                pct_step=0.005,
+            )
 
-    st.markdown("---")
-    st.caption("内部費用")
-    opex_h_input = dual_input_row(
-        "人件費",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["opex_h_rate"]),
-        amount_default=base_sales * DEFAULTS["opex_h_rate"],
-        pct_step=0.01,
-    )
-    opex_k_input = dual_input_row(
-        "経費",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["opex_k_rate"]),
-        amount_default=base_sales * DEFAULTS["opex_k_rate"],
-        pct_step=0.01,
-    )
-    opex_dep_input = dual_input_row(
-        "減価償却",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["opex_dep_rate"]),
-        amount_default=base_sales * DEFAULTS["opex_dep_rate"],
-        pct_step=0.001,
-    )
+    with tab_internal:
+        int_row = st.columns(3, gap="large")
+        with int_row[0]:
+            opex_h_input = dual_input_row(
+                "人件費",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["opex_h_rate"]),
+                amount_default=base_sales * DEFAULTS["opex_h_rate"],
+                pct_step=0.01,
+            )
+        with int_row[1]:
+            opex_k_input = dual_input_row(
+                "経費",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["opex_k_rate"]),
+                amount_default=base_sales * DEFAULTS["opex_k_rate"],
+                pct_step=0.01,
+            )
+        with int_row[2]:
+            opex_dep_input = dual_input_row(
+                "減価償却",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["opex_dep_rate"]),
+                amount_default=base_sales * DEFAULTS["opex_dep_rate"],
+                pct_step=0.001,
+            )
 
-    st.markdown("---")
-    st.caption("営業外")
-    noi_misc_input = dual_input_row(
-        "営業外収益：雑収入",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["noi_misc_rate"]),
-        amount_default=base_sales * DEFAULTS["noi_misc_rate"],
-        pct_min=0.0,
-        pct_max=1.0,
-        pct_step=0.0005,
-    )
-    noi_grant_input = dual_input_row(
-        "営業外収益：補助金",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["noi_grant_rate"]),
-        amount_default=base_sales * DEFAULTS["noi_grant_rate"],
-        pct_min=0.0,
-        pct_max=1.0,
-        pct_step=0.0005,
-    )
-    noi_oth_input = dual_input_row(
-        "営業外収益：その他",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["noi_oth_rate"]),
-        amount_default=base_sales * DEFAULTS["noi_oth_rate"],
-        pct_min=0.0,
-        pct_max=1.0,
-        pct_step=0.0005,
-    )
-    noe_int_input = dual_input_row(
-        "営業外費用：支払利息",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["noe_int_rate"]),
-        amount_default=base_sales * DEFAULTS["noe_int_rate"],
-        pct_min=0.0,
-        pct_max=1.0,
-        pct_step=0.0005,
-    )
-    noe_oth_input = dual_input_row(
-        "営業外費用：雑損",
-        base_sales,
-        mode_key="input_mode",
-        pct_default=float(DEFAULTS["noe_oth_rate"]),
-        amount_default=base_sales * DEFAULTS["noe_oth_rate"],
-        pct_min=0.0,
-        pct_max=1.0,
-        pct_step=0.0005,
-    )
+    with tab_nonop:
+        nonop_row1 = st.columns(3, gap="large")
+        with nonop_row1[0]:
+            noi_misc_input = dual_input_row(
+                "営業外収益：雑収入",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["noi_misc_rate"]),
+                amount_default=base_sales * DEFAULTS["noi_misc_rate"],
+                pct_min=0.0,
+                pct_max=1.0,
+                pct_step=0.0005,
+            )
+        with nonop_row1[1]:
+            noi_grant_input = dual_input_row(
+                "営業外収益：補助金",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["noi_grant_rate"]),
+                amount_default=base_sales * DEFAULTS["noi_grant_rate"],
+                pct_min=0.0,
+                pct_max=1.0,
+                pct_step=0.0005,
+            )
+        with nonop_row1[2]:
+            noi_oth_input = dual_input_row(
+                "営業外収益：その他",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["noi_oth_rate"]),
+                amount_default=base_sales * DEFAULTS["noi_oth_rate"],
+                pct_min=0.0,
+                pct_max=1.0,
+                pct_step=0.0005,
+            )
+        nonop_row2 = st.columns(2, gap="large")
+        with nonop_row2[0]:
+            noe_int_input = dual_input_row(
+                "営業外費用：支払利息",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["noe_int_rate"]),
+                amount_default=base_sales * DEFAULTS["noe_int_rate"],
+                pct_min=0.0,
+                pct_max=1.0,
+                pct_step=0.0005,
+            )
+        with nonop_row2[1]:
+            noe_oth_input = dual_input_row(
+                "営業外費用：雑損",
+                base_sales,
+                mode_key="input_mode",
+                pct_default=float(DEFAULTS["noe_oth_rate"]),
+                amount_default=base_sales * DEFAULTS["noe_oth_rate"],
+                pct_min=0.0,
+                pct_max=1.0,
+                pct_step=0.0005,
+            )
 
-    st.markdown("---")
-    st.header("🎨 グラフスタイル")
-    fig_bg = st.color_picker("図背景色", PLOT_STYLE_DEFAULT["figure_bg"])
-    axes_bg = st.color_picker("枠背景色", PLOT_STYLE_DEFAULT["axes_bg"])
-    show_grid = st.checkbox("グリッド線を表示", value=PLOT_STYLE_DEFAULT["grid"])
-    grid_color = st.color_picker("グリッド線色", PLOT_STYLE_DEFAULT["grid_color"])
-    pos_color = st.color_picker("増加色", PLOT_STYLE_DEFAULT["pos_color"])
-    neg_color = st.color_picker("減少色", PLOT_STYLE_DEFAULT["neg_color"])
-    node_size = st.slider("ノードサイズ", 1, 30, PLOT_STYLE_DEFAULT["node_size"])
-    font_color = st.color_picker("フォント色", PLOT_STYLE_DEFAULT["font_color"])
-    font_size = st.slider("フォントサイズ", 6, 24, PLOT_STYLE_DEFAULT["font_size"])
-    alpha = st.slider("透過度", 0.0, 1.0, PLOT_STYLE_DEFAULT["alpha"], 0.05)
+with st.expander("🎨 グラフスタイル", expanded=False):
+    st.caption("トルネード図やウォーターフォールなどのビジュアルテーマを、ブランドカラーに合わせて細かく調整できます。")
+    style_cols = st.columns(3, gap="large")
+    with style_cols[0]:
+        fig_bg = st.color_picker("図背景色", PLOT_STYLE_DEFAULT["figure_bg"])
+        axes_bg = st.color_picker("枠背景色", PLOT_STYLE_DEFAULT["axes_bg"])
+        show_grid = st.checkbox("グリッド線を表示", value=PLOT_STYLE_DEFAULT["grid"])
+    with style_cols[1]:
+        grid_color = st.color_picker("グリッド線色", PLOT_STYLE_DEFAULT["grid_color"])
+        pos_color = st.color_picker("増加色", PLOT_STYLE_DEFAULT["pos_color"])
+        neg_color = st.color_picker("減少色", PLOT_STYLE_DEFAULT["neg_color"])
+    with style_cols[2]:
+        node_size = st.slider("ノードサイズ", 1, 30, PLOT_STYLE_DEFAULT["node_size"])
+        font_color = st.color_picker("フォント色", PLOT_STYLE_DEFAULT["font_color"])
+        font_size = st.slider("フォントサイズ", 6, 24, PLOT_STYLE_DEFAULT["font_size"])
+        alpha = st.slider("透過度", 0.0, 1.0, PLOT_STYLE_DEFAULT["alpha"], 0.05)
+
+
 
 plot_style = {
     "figure_bg": fig_bg,
@@ -1592,7 +1628,7 @@ with tab_input:
     c8.metric("労働分配率", ldr_str)
 
     st.markdown("### 標準原価の見える化（中央ビュー）")
-    st.caption("サイドバーで設定した原価や費用がリアルタイムに反映され、売上に対するインパクトを一目で確認できます。")
+    st.caption("コントロールハブで設定した原価や費用がリアルタイムに反映され、売上に対するインパクトを一目で確認できます。")
 
     revenue = float(base_amt.get("REV", 0.0))
     cost_cards = []
@@ -1631,31 +1667,83 @@ with tab_input:
         if card["code"] in {"COGS_MAT", "COGS_LBR", "COGS_OUT_SRC", "COGS_OUT_CON", "COGS_OTH"}
     ]
     if revenue > 0 and any(card["value"] > 0 for card in cost_chart_cards):
-        _set_jp_font()
-        fig, ax = plt.subplots(figsize=(6.6, 0.55 * len(cost_chart_cards) + 1.2))
         names = [card["label"] for card in cost_chart_cards]
         shares = [max(0.0, card["ratio"]) * 100 if math.isfinite(card["ratio"]) else 0.0 for card in cost_chart_cards]
-        max_share = max(shares)
+        max_share = max(shares) if shares else 0.0
+        slider_min = 5.0
+        slider_max = max(
+            slider_min + 5.0,
+            (math.ceil(max_share * 1.6 / 5.0) * 5.0) if max_share > 0 else 30.0,
+        )
+        default_limit = max(
+            slider_min + 5.0,
+            (math.ceil(max_share * 1.2 / 5.0) * 5.0) if max_share > 0 else 25.0,
+        )
+        share_axis_max = st.slider(
+            "表示上限（%）",
+            min_value=float(slider_min),
+            max_value=float(slider_max),
+            value=float(min(default_limit, slider_max)),
+            step=1.0,
+            key="cost_share_axis",
+            help="棒グラフ右端のスケールをコントロールできます。",
+        )
+
         colors = [THEME_COLORS["primary_light"] if i % 2 == 0 else THEME_COLORS["primary"] for i in range(len(names))]
-        bars = ax.barh(names, shares, color=colors, alpha=0.9)
-        ax.set_xlabel("売上比率（%）")
-        ax.set_xlim(0, max_share * 1.25 if max_share > 0 else 5)
-        ax.grid(axis="x", linestyle="--", color="#D4DEE9", alpha=0.7)
-        ax.set_facecolor("white")
-        fig.patch.set_facecolor("white")
-        for bar, card in zip(bars, cost_chart_cards):
-            offset = max_share * 0.02 if max_share > 0 else 0.5
-            ax.text(
-                bar.get_width() + offset,
-                bar.get_y() + bar.get_height() / 2,
-                format_ratio(card["ratio"]),
-                va="center",
-                color=THEME_COLORS["text"],
-                fontsize=10,
-            )
-        st.pyplot(fig, use_container_width=True)
-        plt.close(fig)
-        st.caption("横棒グラフは売上100に対し、それぞれの標準原価がどれだけを占めるかを示します。")
+        hover_details = [
+            f"{format_ratio(card['ratio'])} ／ {fmt_amount_with_unit(card['value'])}"
+            for card in cost_chart_cards
+        ]
+        fig_height = 120 + 70 * len(cost_chart_cards)
+        fig = go.Figure(
+            data=[
+                go.Bar(
+                    x=shares,
+                    y=names,
+                    orientation="h",
+                    marker=dict(
+                        color=colors,
+                        line=dict(color="rgba(31, 78, 121, 0.18)", width=1.4),
+                    ),
+                    text=[format_ratio(card["ratio"]) for card in cost_chart_cards],
+                    textposition="outside",
+                    textfont=dict(size=12, color=THEME_COLORS["text"]),
+                    customdata=hover_details,
+                    hovertemplate="<b>%{y}</b><br>売上比率: %{x:.1f}%<br>%{customdata}<extra></extra>",
+                    cliponaxis=False,
+                )
+            ]
+        )
+        fig.update_layout(
+            height=fig_height,
+            margin=dict(l=0, r=18, t=48, b=10),
+            bargap=0.25,
+            plot_bgcolor="#FFFFFF",
+            paper_bgcolor="#FFFFFF",
+            xaxis=dict(
+                title="売上比率（%）",
+                range=[0, share_axis_max],
+                showgrid=True,
+                gridcolor="#D4DEE9",
+                ticksuffix="%",
+                zeroline=False,
+                rangeslider=dict(visible=True, thickness=0.12, bgcolor="rgba(31, 78, 121, 0.08)"),
+            ),
+            yaxis=dict(autorange="reversed", showgrid=False),
+            hoverlabel=dict(bgcolor=THEME_COLORS["primary"], font=dict(color="#FFFFFF")),
+        )
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "modeBarButtonsToAdd": ["drawline", "drawrect", "eraseshape"],
+                "toImageButtonOptions": {"filename": "standard-cost-breakdown"},
+            },
+        )
+        st.caption(
+            "横棒グラフは売上100に対し、それぞれの標準原価がどれだけを占めるかを示します。ズーム/パンに加え、スライダーで目盛りをコントロールできます。"
+        )
 
     cost_table = [
         {
@@ -1671,7 +1759,7 @@ with tab_input:
         use_container_width=True,
         hide_index=True,
     )
-    st.caption("カードと表はサイドバーの入力に連動して更新されます。粗利（CT）と標準原価のバランスを中央ビューで確認してください。")
+    st.caption("カードと表はコントロールハブの入力に連動して更新されます。粗利（CT）と標準原価のバランスを中央ビューで確認してください。")
 
     st.markdown("### 主要項目（経営メモ付き）")
     rows = []
@@ -1694,7 +1782,7 @@ with tab_input:
     )
 
     st.info(
-        "ヒント: サイドバーの％／実額・人員・売上を調整すると、標準原価ビューと一覧表が即座に更新されます。固定費や個別額を設定したい場合は、下の『金額上書き』をご利用ください。"
+        "ヒント: コントロールハブの％／実額・人員・売上を調整すると、標準原価ビューと一覧表が即座に更新されます。固定費や個別額を設定したい場合は、下の『金額上書き』をご利用ください。"
     )
 
     with st.expander("🔧 金額上書き（固定費/個別額の設定）", expanded=False):
@@ -2015,7 +2103,7 @@ with tab_analysis:
 with tab_ai:
     st.markdown("<span class='ai-badge'>AIによる自動レビュー</span>", unsafe_allow_html=True)
     st.subheader("インテリジェント・サマリー")
-    st.caption("シナリオやサイドバーの設定を更新すると、AIインサイトも即座にリフレッシュされます。")
+    st.caption("シナリオやコントロールハブの設定を更新すると、AIインサイトも即座にリフレッシュされます。")
     overrides = st.session_state.get("overrides", {})
     base_amt_ai = compute(base_plan, amount_overrides=overrides)
     metrics = summarize_plan_metrics(base_amt_ai)
