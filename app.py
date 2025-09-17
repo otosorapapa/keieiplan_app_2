@@ -20,6 +20,200 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+THEME_COLORS: Dict[str, str] = {
+    "background": "#F7F9FB",
+    "surface": "#FFFFFF",
+    "surface_alt": "#E8F1FA",
+    "primary": "#1F4E79",
+    "primary_light": "#4F83B3",
+    "accent": "#F2C57C",
+    "positive": "#70A9A1",
+    "positive_strong": "#2B7A78",
+    "negative": "#F28F8F",
+    "neutral": "#C2D3E5",
+    "text": "#203040",
+    "text_subtle": "#596B7A",
+}
+
+CUSTOM_STYLE = f"""
+<style>
+:root {{
+    --base-bg: {THEME_COLORS["background"]};
+    --surface: {THEME_COLORS["surface"]};
+    --surface-alt: {THEME_COLORS["surface_alt"]};
+    --primary: {THEME_COLORS["primary"]};
+    --primary-light: {THEME_COLORS["primary_light"]};
+    --accent: {THEME_COLORS["accent"]};
+    --positive: {THEME_COLORS["positive"]};
+    --positive-strong: {THEME_COLORS["positive_strong"]};
+    --negative: {THEME_COLORS["negative"]};
+    --neutral: {THEME_COLORS["neutral"]};
+    --text-color: {THEME_COLORS["text"]};
+    --text-subtle: {THEME_COLORS["text_subtle"]};
+}}
+
+html, body, [data-testid="stAppViewContainer"] {{
+    background-color: var(--base-bg);
+    color: var(--text-color);
+    font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+}}
+
+[data-testid="stSidebar"] {{
+    background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: #F7FAFC;
+}}
+
+[data-testid="stSidebar"] * {{
+    color: #F7FAFC !important;
+}}
+
+.stTabs [role="tablist"] {{
+    gap: 0.4rem;
+    border-bottom: 1px solid var(--neutral);
+}}
+
+.stTabs [role="tab"] {{
+    font-weight: 600;
+    padding: 0.85rem 1.4rem;
+    border-radius: 14px 14px 0 0;
+    background-color: transparent;
+    color: var(--text-subtle);
+}}
+
+.stTabs [role="tab"][aria-selected="true"] {{
+    background-color: var(--surface);
+    color: var(--primary);
+    box-shadow: 0 -2px 20px rgba(31, 78, 121, 0.08);
+    border-bottom: 3px solid var(--accent);
+}}
+
+div[data-testid="stMetric"] {{
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%);
+    border-radius: 18px;
+    padding: 1.15rem 1.3rem;
+    box-shadow: 0 14px 28px rgba(31, 78, 121, 0.08);
+    backdrop-filter: blur(6px);
+}}
+
+div[data-testid="stMetric"] [data-testid="stMetricLabel"] {{
+    font-size: 0.92rem;
+    color: var(--text-subtle);
+}}
+
+div[data-testid="stMetric"] [data-testid="stMetricValue"] {{
+    color: var(--primary);
+    font-weight: 700;
+}}
+
+div[data-testid="stMetric"] [data-testid="stMetricDelta"] {{
+    color: var(--accent) !important;
+}}
+
+div[data-testid="stDataFrame"] {{
+    background-color: var(--surface);
+    border-radius: 18px;
+    padding: 0.6rem 0.8rem 0.9rem 0.8rem;
+    box-shadow: 0 12px 26px rgba(31, 78, 121, 0.06);
+}}
+
+button[kind="primary"] {{
+    background-color: var(--primary);
+    border-radius: 999px;
+    border: none;
+    box-shadow: 0 10px 20px rgba(31, 78, 121, 0.15);
+}}
+
+button[kind="primary"]:hover {{
+    background-color: var(--primary-light);
+}}
+
+.hero-card {{
+    background: linear-gradient(135deg, rgba(93, 169, 233, 0.92) 0%, rgba(112, 169, 161, 0.92) 100%);
+    color: #ffffff;
+    padding: 2.2rem 2.8rem;
+    border-radius: 26px;
+    box-shadow: 0 24px 48px rgba(22, 60, 90, 0.25);
+    margin-bottom: 1.5rem;
+}}
+
+.hero-card h1 {{
+    margin: 0 0 0.6rem 0;
+    font-size: 2.35rem;
+    font-weight: 700;
+}}
+
+.hero-card p {{
+    margin: 0;
+    font-size: 1.08rem;
+    opacity: 0.92;
+}}
+
+.insight-card {{
+    background-color: var(--surface);
+    border-radius: 18px;
+    padding: 1.1rem 1.3rem;
+    box-shadow: 0 12px 24px rgba(31, 78, 121, 0.08);
+    border-left: 6px solid var(--primary-light);
+    margin-bottom: 1rem;
+}}
+
+.insight-card.positive {{
+    border-left-color: var(--positive);
+}}
+
+.insight-card.warning {{
+    border-left-color: var(--accent);
+}}
+
+.insight-card.alert {{
+    border-left-color: var(--negative);
+}}
+
+.insight-card h4 {{
+    margin: 0 0 0.4rem 0;
+    font-size: 1.05rem;
+    color: var(--primary);
+}}
+
+.insight-card p {{
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-subtle);
+    line-height: 1.55;
+}}
+
+.anomaly-table caption {{
+    caption-side: top;
+    font-weight: 600;
+    color: var(--primary);
+}}
+
+.ai-badge {{
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background-color: rgba(112, 169, 161, 0.16);
+    color: var(--positive-strong);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}}
+</style>
+"""
+
+st.markdown(CUSTOM_STYLE, unsafe_allow_html=True)
+
+st.markdown(
+    """
+    <div class="hero-card">
+        <h1>McKinsey Inspired 経営計画ダッシュボード</h1>
+        <p>直感的な操作とAI分析で、戦略から実行までを素早くデザインします。グラフ・KPI・シナリオを洗練されたUIで俯瞰し、最適な意思決定をサポートします。</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 DEFAULTS = {
     "sales": 1000000000,
     "fte": 20.0,
@@ -41,16 +235,16 @@ DEFAULTS = {
 }
 
 PLOT_STYLE_DEFAULT: Dict[str, Any] = {
-    "figure_bg": "#FFFFFF",
-    "axes_bg": "#FFFFFF",
+    "figure_bg": THEME_COLORS["surface"],
+    "axes_bg": THEME_COLORS["surface"],
     "grid": True,
-    "grid_color": "#CCCCCC",
-    "pos_color": "#1f77b4",
-    "neg_color": "#d62728",
-    "node_size": 10,
-    "font_color": "#000000",
-    "font_size": 10,
-    "alpha": 0.9,
+    "grid_color": "#D4DEE9",
+    "pos_color": THEME_COLORS["positive"],
+    "neg_color": THEME_COLORS["negative"],
+    "node_size": 11,
+    "font_color": THEME_COLORS["text"],
+    "font_size": 11,
+    "alpha": 0.88,
 }
 
 # --- 営業外の既定値（必要に応じてサイドバー入力にしても良い） ---
@@ -185,26 +379,79 @@ def render_tornado_mckinsey(
         st.caption("※ 一部の値は省略記号で表示しています。下表で詳細を確認ください。")
 
 
-def build_sensitivity_view_options():
-    st.subheader("📉 感応度分析｜表示設定")
-    c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
+def build_sensitivity_view_options(
+    parent: st.delta_generator.DeltaGenerator | None = None,
+    *,
+    key_prefix: str = "sensitivity",
+    defaults: Dict[str, Any] | None = None,
+    show_header: bool = True,
+) -> Dict[str, Any]:
+    """感応度グラフの各種コントロール（配置可能なように柔軟化）。"""
+
+    ctx = parent if parent is not None else st
+    defaults = defaults or {}
+    options = ["トルネード（±差分）", "ウォーターフォール（寄与累積）"]
+    default_viz = defaults.get("viz", options[0])
+    viz_index = options.index(default_viz) if default_viz in options else 0
+
+    if show_header:
+        ctx.subheader("📉 感応度分析｜表示設定")
+
+    c1, c2, c3, c4 = ctx.columns([2, 1.1, 1.1, 1.0])
     with c1:
         viz = st.radio(
             "可視化タイプ",
-            ["トルネード（±差分）", "ウォーターフォール（寄与累積）"],
+            options,
             horizontal=True,
+            index=viz_index,
+            key=f"{key_prefix}_viz",
         )
     with c2:
-        top_n = st.slider("表示項目数 (Top-N)", 3, 12, 6, 1)
+        top_n = st.slider(
+            "表示項目数 (Top-N)",
+            3,
+            12,
+            int(defaults.get("top_n", 6)),
+            1,
+            key=f"{key_prefix}_topn",
+        )
     with c3:
-        height_px = st.slider("グラフ高さ (px)", 200, 900, 360, 20)
+        height_px = st.slider(
+            "グラフ高さ (px)",
+            200,
+            900,
+            int(defaults.get("height_px", 360)),
+            20,
+            key=f"{key_prefix}_height",
+        )
     with c4:
-        compact = st.checkbox("コンパクト表示（小さな文字）", True)
+        compact = st.checkbox(
+            "コンパクト表示（小さな文字）",
+            value=bool(defaults.get("compact", True)),
+            key=f"{key_prefix}_compact",
+        )
 
-    step = st.slider("感応度ステップ（±）", 0.01, 0.20, 0.10, 0.01)
-    show_values = st.checkbox("値ラベルを表示", True)
-    return dict(viz=viz, top_n=top_n, height_px=height_px,
-                compact=compact, step=step, show_values=show_values)
+    step = ctx.slider(
+        "感応度ステップ（±）",
+        0.01,
+        0.20,
+        float(defaults.get("step", 0.10)),
+        0.01,
+        key=f"{key_prefix}_step",
+    )
+    show_values = ctx.checkbox(
+        "値ラベルを表示",
+        value=bool(defaults.get("show_values", True)),
+        key=f"{key_prefix}_showvalues",
+    )
+    return dict(
+        viz=viz,
+        top_n=top_n,
+        height_px=height_px,
+        compact=compact,
+        step=step,
+        show_values=show_values,
+    )
 
 
 def _sensitivity_items(plan: dict, step: float):
@@ -251,22 +498,24 @@ def render_tornado_compact(plan: dict, step: float, top_n: int, height_px: int,
     fig_h_in = max(height_px / 96.0, 2 / 3)
     fig, ax = plt.subplots(figsize=(7, fig_h_in))
     for i, (lo, hi) in enumerate(zip(lows, highs)):
-        ax.barh(i, hi, color="#0B3D91", alpha=0.9)
-        ax.barh(i, lo, color="#9E9E9E", alpha=0.9)
+        hi_color = THEME_COLORS["positive"] if hi >= 0 else THEME_COLORS["negative"]
+        lo_color = THEME_COLORS["negative"] if lo <= 0 else THEME_COLORS["positive"]
+        ax.barh(i, hi, color=hi_color, alpha=0.85)
+        ax.barh(i, lo, color=lo_color, alpha=0.45)
 
     ax.set_yticks(range(len(labels)))
     ax.set_yticklabels(labels, fontsize=(9 if compact else 11))
     ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"¥{x:,.0f}"))
-    ax.axvline(0, color="#D0D0D0", linewidth=0.8)
+    ax.axvline(0, color=THEME_COLORS["neutral"], linewidth=1.0, linestyle="--")
     ax.set_xlabel("経常利益への寄与（差分）", fontsize=(9 if compact else 11))
 
     if show_values:
         offset = max(1.0, max(abs(v) for v in lows + highs) * 0.02)
         for i, (lo, hi) in enumerate(zip(lows, highs)):
             ax.text(hi + (offset if hi >= 0 else -offset),
-                    i, format_money(hi), va="center", ha="left" if hi >= 0 else "right", fontsize=(8 if compact else 10))
+                    i, format_money(hi), va="center", ha="left" if hi >= 0 else "right", fontsize=(8 if compact else 10), color=THEME_COLORS["text"])
             ax.text(lo + (offset if lo >= 0 else -offset),
-                    i, format_money(lo), va="center", ha="left" if lo >= 0 else "right", fontsize=(8 if compact else 10))
+                    i, format_money(lo), va="center", ha="left" if lo >= 0 else "right", fontsize=(8 if compact else 10), color=THEME_COLORS["text_subtle"])
 
     fig.tight_layout()
     st.pyplot(fig, use_container_width=True)
@@ -295,12 +544,12 @@ def render_sensitivity_waterfall(plan: dict, step: float, top_n: int, height_px:
     colors = []
     for i, v in enumerate(vals):
         if i == 0 or i == len(vals) - 1:
-            colors.append("#0B3D91")
+            colors.append(THEME_COLORS["primary"])
         else:
-            colors.append("#0B3D91" if v >= 0 else "#9E9E9E")
+            colors.append(THEME_COLORS["positive"] if v >= 0 else THEME_COLORS["negative"])
 
-    ax.bar(range(len(vals)), vals, color=colors)
-    ax.axhline(0, color="#D0D0D0", linewidth=0.8)
+    ax.bar(range(len(vals)), vals, color=colors, alpha=0.88)
+    ax.axhline(0, color=THEME_COLORS["neutral"], linewidth=1.0, linestyle="--")
     ax.set_xticks(range(len(labels)))
     ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=(8 if compact else 10))
     ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"¥{x:,.0f}"))
@@ -320,13 +569,52 @@ def render_sensitivity_waterfall(plan: dict, step: float, top_n: int, height_px:
 
 def render_sensitivity_view(plan: dict):
     """感応度分析ビューの統括（俯瞰性改善＋ウォーターフォール追加）"""
-    opt = build_sensitivity_view_options()
-    if opt["viz"].startswith("トルネード"):
-        render_tornado_compact(plan, opt["step"], opt["top_n"], opt["height_px"],
-                               opt["compact"], opt["show_values"])
+    zoom_mode = st.toggle(
+        "🔍 グラフ拡大モードで操作する",
+        value=st.session_state.get("sensitivity_zoom_mode", False),
+        key="sensitivity_zoom_mode",
+        help="横幅いっぱいにグラフを表示しつつ、右側のコントロールでリアルタイムに調整できます。",
+    )
+
+    if zoom_mode:
+        chart_col, ctrl_col = st.columns([3.2, 1.8])
+        with ctrl_col:
+            st.markdown("<span class='ai-badge'>Zoomコントロール</span>", unsafe_allow_html=True)
+            opt = build_sensitivity_view_options(
+                parent=ctrl_col,
+                key_prefix="sensitivity",
+                defaults=st.session_state.get("sensitivity_current", {}),
+                show_header=False,
+            )
+            st.caption("設定は自動で保存され、通常表示に戻っても引き継がれます。")
+        target_container = chart_col
     else:
-        render_sensitivity_waterfall(plan, opt["step"], opt["top_n"], opt["height_px"],
-                                     opt["compact"], opt["show_values"])
+        opt = build_sensitivity_view_options(key_prefix="sensitivity")
+        target_container = st.container()
+
+    st.session_state["sensitivity_current"] = opt
+
+    with target_container:
+        if zoom_mode:
+            st.markdown("#### 🔎 拡大ビュー（ライブ更新）")
+        if opt["viz"].startswith("トルネード"):
+            render_tornado_compact(
+                plan,
+                opt["step"],
+                opt["top_n"],
+                opt["height_px"],
+                opt["compact"],
+                opt["show_values"],
+            )
+        else:
+            render_sensitivity_waterfall(
+                plan,
+                opt["step"],
+                opt["top_n"],
+                opt["height_px"],
+                opt["compact"],
+                opt["show_values"],
+            )
 
 # --- EXCEL JP LOCALE
 def apply_japanese_styles(wb) -> None:
@@ -371,6 +659,241 @@ def format_money(x, unit="百万円"):
         return f"{thousands(x):,.0f}"
     else:
         return f"{x:,.0f}"
+
+
+def summarize_plan_metrics(amounts: Dict[str, float]) -> Dict[str, float]:
+    """計画値から主要指標（率・水準）を算出。"""
+
+    sales = float(amounts.get("REV", 0.0))
+    gross = float(amounts.get("GROSS", 0.0))
+    op = float(amounts.get("OP", 0.0))
+    ord_val = float(amounts.get("ORD", 0.0))
+    opex = float(amounts.get("OPEX_TTL", 0.0))
+    cogs = float(amounts.get("COGS_TTL", sales - gross))
+
+    def safe_ratio(num: float, den: float) -> float:
+        return float(num / den) if den not in (0, None) else float("nan")
+
+    metrics = {
+        "sales": sales,
+        "gross": gross,
+        "op": op,
+        "ord": ord_val,
+        "gross_margin": safe_ratio(gross, sales),
+        "op_margin": safe_ratio(op, sales),
+        "ord_margin": safe_ratio(ord_val, sales),
+        "cogs_ratio": safe_ratio(cogs, sales),
+        "opex_ratio": safe_ratio(opex, sales),
+        "labor_ratio": safe_ratio(amounts.get("OPEX_H", 0.0), gross),
+        "breakeven": float(amounts.get("BE_SALES", float("nan"))),
+    }
+    return metrics
+
+
+def format_ratio(value: float) -> str:
+    if value is None or (isinstance(value, float) and (np.isnan(value) or np.isinf(value))):
+        return "—"
+    return f"{value * 100:.1f}%"
+
+
+def generate_ai_recommendations(
+    metrics: Dict[str, float],
+    numeric_amounts: pd.DataFrame | None,
+    numeric_kpis: pd.DataFrame | None,
+    unit: str,
+) -> List[Dict[str, str]]:
+    """定性コメントを生成（ルールベースAIのアシスト）。"""
+
+    insights: List[Dict[str, str]] = []
+    gm = metrics.get("gross_margin")
+    ord_margin = metrics.get("ord_margin")
+    labor_ratio = metrics.get("labor_ratio")
+    be_sales = metrics.get("breakeven")
+    sales = metrics.get("sales", 0.0)
+
+    if gm is not None and math.isfinite(gm):
+        if gm < 0.25:
+            insights.append({
+                "title": "粗利率が低位です",
+                "body": "粗利率が25%を下回っています。価格改定や高付加価値サービスの投入でマージン改善を検討しましょう。",
+                "tone": "warning",
+            })
+        elif gm > 0.45:
+            insights.append({
+                "title": "粗利率はプレミアム水準",
+                "body": "粗利率が45%超と高水準です。余剰利益を投資や人材育成に再配分する余地があります。",
+                "tone": "positive",
+            })
+
+    if ord_margin is not None and math.isfinite(ord_margin):
+        if ord_margin < 0:
+            insights.append({
+                "title": "経常利益が赤字レンジ",
+                "body": "経常利益がマイナスです。固定費削減と利益率の高い案件へのシフトを緊急で検討してください。",
+                "tone": "alert",
+            })
+        elif ord_margin < 0.05:
+            insights.append({
+                "title": "利益率の底上げが必要",
+                "body": "経常利益率が5%未満です。販売単価の引き上げや高粗利商品の比率向上が改善策になります。",
+                "tone": "warning",
+            })
+        elif ord_margin > 0.12:
+            insights.append({
+                "title": "利益創出力は堅調",
+                "body": "経常利益率が12%超と十分な稼ぐ力があります。積極投資フェーズに移行しても耐性があります。",
+                "tone": "positive",
+            })
+
+    if labor_ratio is not None and math.isfinite(labor_ratio):
+        if labor_ratio > 0.65:
+            insights.append({
+                "title": "人件費の比率が高い",
+                "body": "労働分配率が65%を超えています。生産性向上策やアウトソースの活用でコストを平準化しましょう。",
+                "tone": "warning",
+            })
+        elif labor_ratio < 0.45:
+            insights.append({
+                "title": "人材投資の余地あり",
+                "body": "労働分配率が45%未満です。人材強化やインセンティブ設計に投資し、組織力を底上げするチャンスです。",
+                "tone": "positive",
+            })
+
+    if be_sales and sales and math.isfinite(be_sales):
+        be_ratio = be_sales / sales if sales else float("nan")
+        if math.isfinite(be_ratio) and be_ratio > 0.95:
+            insights.append({
+                "title": "損益分岐点が売上に接近",
+                "body": "損益分岐点売上がほぼフル稼働の水準です。固定費の圧縮や粗利率改善で安全余裕を確保しましょう。",
+                "tone": "alert",
+            })
+        elif math.isfinite(be_ratio) and be_ratio < 0.75:
+            insights.append({
+                "title": "損益分岐点に余裕あり",
+                "body": "損益分岐点が売上の75%未満で、収益構造に安全余裕があります。成長投資のアクセルを踏める状態です。",
+                "tone": "positive",
+            })
+
+    if numeric_amounts is not None and not numeric_amounts.empty:
+        value_cols = [c for c in numeric_amounts.columns if c != "項目"]
+        if len(value_cols) >= 2 and "ORD" in numeric_amounts.index:
+            base_col = value_cols[0]
+            base_ord = float(numeric_amounts.loc["ORD", base_col])
+            best_col = None
+            best_diff = 0.0
+            for col in value_cols[1:]:
+                diff = float(numeric_amounts.loc["ORD", col]) - base_ord
+                if diff > best_diff:
+                    best_diff = diff
+                    best_col = col
+            if best_col and best_diff > 0:
+                insights.append({
+                    "title": f"最有力シナリオ：{best_col}",
+                    "body": f"ベース比で経常利益を{format_money(best_diff, unit)} {unit}押し上げます。主要ドライバを戦略課題に落とし込みましょう。",
+                    "tone": "positive",
+                })
+
+    if not insights:
+        insights.append({
+            "title": "データ点検が完了しました",
+            "body": "大きな懸念は検出されませんでした。引き続きシナリオ比較と感応度を活用し、計画をチューニングしてください。",
+            "tone": "positive",
+        })
+
+    return insights[:5]
+
+
+def detect_anomalies_in_plan(
+    numeric_amounts: pd.DataFrame | None,
+    numeric_kpis: pd.DataFrame | None,
+    unit: str,
+    metrics: Dict[str, float],
+) -> pd.DataFrame:
+    """異常値（高リスク・高インパクト）の候補を抽出。"""
+
+    cols = ["カテゴリ", "対象", "値", "判定", "コメント"]
+    if numeric_amounts is None or numeric_amounts.empty:
+        return pd.DataFrame(columns=cols)
+
+    value_cols = [c for c in numeric_amounts.columns if c != "項目"]
+    if not value_cols:
+        return pd.DataFrame(columns=cols)
+
+    base_col = value_cols[0]
+    anomalies: List[Dict[str, str]] = []
+
+    sales = metrics.get("sales", 0.0)
+    base_ord = metrics.get("ord", 0.0)
+    base_op = metrics.get("op", 0.0)
+    base_gross = metrics.get("gross", 0.0)
+    be_sales = metrics.get("breakeven", float("nan"))
+
+    def record(category: str, target: str, value: str, judgement: str, comment: str) -> None:
+        anomalies.append({"カテゴリ": category, "対象": target, "値": value, "判定": judgement, "コメント": comment})
+
+    if base_gross <= 0:
+        record("損益", "粗利（目標）", f"{format_money(base_gross, unit)} {unit}", "🚨 粗利が不足", "売上より費用が先行しています。可変費率の再点検が必要です。")
+    if base_op < 0:
+        record("損益", "営業利益（目標）", f"{format_money(base_op, unit)} {unit}", "🚨 赤字リスク", "営業利益がマイナスです。固定費の削減や高粗利案件へのシフトを優先してください。")
+    if base_ord < 0:
+        record("損益", "経常利益（目標）", f"{format_money(base_ord, unit)} {unit}", "🚨 経常赤字", "営業外損益も含め赤字レンジです。財務・本業双方のてこ入れが求められます。")
+
+    gm = metrics.get("gross_margin")
+    if gm is not None and math.isfinite(gm) and gm < 0.2:
+        record("利益率", "粗利率", format_ratio(gm), "⚠️ マージン低下", "粗利率が20%を割り込んでいます。価格戦略や原価低減を検討してください。")
+
+    ldr_value = None
+    if numeric_kpis is not None and not numeric_kpis.empty and "LDR" in numeric_kpis.index:
+        ldr_value = float(numeric_kpis.loc["LDR", base_col])
+        if math.isfinite(ldr_value) and ldr_value > 0.7:
+            record("人件費", "労働分配率（目標）", format_ratio(ldr_value), "⚠️ 人件費過多", "人件費比率が高すぎます。工数マネジメントや外注活用でバランスを取りましょう。")
+
+    cogs_ratio = metrics.get("cogs_ratio")
+    if cogs_ratio is not None and math.isfinite(cogs_ratio) and cogs_ratio > 0.8:
+        record("コスト構造", "外部仕入比率", format_ratio(cogs_ratio), "⚠️ コスト高止まり", "仕入費用が売上の80%超です。サプライヤー交渉やポートフォリオ見直しが必要です。")
+
+    if be_sales and sales and math.isfinite(be_sales) and be_sales > sales * 0.95:
+        record("安全余裕", "損益分岐点売上", f"{format_money(be_sales, unit)} {unit}", "⚠️ 余裕が僅少", "損益分岐点が現計画売上の95%超です。固定費圧縮で安全マージンを確保しましょう。")
+
+    if numeric_amounts is not None and "ORD" in numeric_amounts.index and len(value_cols) > 1:
+        base_ord_value = float(numeric_amounts.loc["ORD", base_col])
+        baseline = max(abs(base_ord_value), sales * 0.02, 1_000_000.0)
+        for col in value_cols[1:]:
+            scn_value = float(numeric_amounts.loc["ORD", col])
+            diff = scn_value - base_ord_value
+            if diff <= -0.5 * baseline:
+                record(
+                    "シナリオ",
+                    f"{col}｜経常利益",
+                    f"{format_money(scn_value, unit)} {unit}",
+                    "🚨 大幅悪化",
+                    f"ベース比で{format_money(abs(diff), unit)} {unit}の減益です。前提条件の見直しが必要です。",
+                )
+            elif diff >= 0.5 * baseline:
+                record(
+                    "シナリオ",
+                    f"{col}｜経常利益",
+                    f"{format_money(scn_value, unit)} {unit}",
+                    "✅ 大幅改善",
+                    f"ベース比で{format_money(diff, unit)} {unit}増益です。実現可能性と投資アクションを検証しましょう。",
+                )
+
+    if numeric_kpis is not None and not numeric_kpis.empty and "LDR" in numeric_kpis.index and len(value_cols) > 1:
+        for col in value_cols[1:]:
+            ldr = float(numeric_kpis.loc["LDR", col])
+            if math.isfinite(ldr) and ldr > 0.75:
+                record(
+                    "人件費",
+                    f"{col}｜労働分配率",
+                    format_ratio(ldr),
+                    "⚠️ 人件費過重",
+                    "シナリオ適用時に人件費比率が75%を超えます。追加施策での吸収が必要です。",
+                )
+
+    if not anomalies:
+        return pd.DataFrame(columns=cols)
+
+    return pd.DataFrame(anomalies, columns=cols)
 
 
 def compute_plan(plan: dict) -> dict:
@@ -896,7 +1419,9 @@ apply_setting("NOI_OTH", noi_oth_input)
 apply_setting("NOE_INT", noe_int_input)
 apply_setting("NOE_OTH", noe_oth_input)
 
-tab_input, tab_scen, tab_analysis, tab_export = st.tabs(["📝 計画入力", "🧪 シナリオ", "📊 感応度分析", "📤 エクスポート"])
+tab_input, tab_scen, tab_analysis, tab_ai, tab_export = st.tabs(
+    ["📝 計画入力", "🧪 シナリオ", "📊 感応度分析", "🤖 AIインサイト", "📤 エクスポート"]
+)
 
 with tab_input:
     st.subheader("単年利益計画（目標列）")
@@ -1120,9 +1645,76 @@ def scenario_table(plan: PlanConfig, unit: str, overrides: Dict[str, float]) -> 
     st.dataframe(df2, use_container_width=True)
     return df1, df2, editable
 
+
+def compute_scenario_numeric(plan: PlanConfig, specs: List[Tuple[str, Dict[str, float]]], overrides: Dict[str, float]) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """シナリオ比較の数値版（Excel出力やAI分析で再利用）。"""
+
+    cols = ["項目"] + [nm for nm, _ in specs]
+    num_rows = {code: [label] for code, label, _ in ITEMS if code not in ("PC_SALES", "PC_GROSS", "PC_ORD", "LDR", "BE_SALES")}
+    num_kpis = {
+        "BE_SALES": ["損益分岐点売上高"],
+        "PC_SALES": ["一人当たり売上"],
+        "PC_GROSS": ["一人当たり粗利"],
+        "PC_ORD": ["一人当たり経常利益"],
+        "LDR": ["労働分配率"],
+    }
+
+    def apply_driver(spec: Dict[str, float]):
+        t = spec.get("type", "none")
+        v = spec.get("value", None)
+        if t == "none":
+            return plan.base_sales, overrides, None
+        if t == "sales_pct":
+            return plan.base_sales * (1.0 + float(v)), overrides, None
+        if t == "gross_pt":
+            S = plan.base_sales
+            delta_e = -float(v) * S
+            ov = dict(overrides) if overrides else {}
+            tmp = compute(plan, sales_override=S, amount_overrides=ov)
+            base_oth = tmp["COGS_OTH"]
+            ov["COGS_OTH"] = max(0.0, base_oth + delta_e)
+            return S, ov, None
+        if t == "target_op":
+            target = float(v)
+            sol_S, sol_amt = bisection_for_target_op(plan, target, s_low=0.0, s_high=max(1.2 * plan.base_sales, 1_000_000.0))
+            return sol_S, overrides, sol_amt
+        if t == "last_year":
+            return plan.base_sales, overrides, None
+        if t == "bep":
+            temp = compute(plan, sales_override=plan.base_sales, amount_overrides=overrides)
+            be = temp["BE_SALES"]
+            return (be if math.isfinite(be) else plan.base_sales), overrides, None
+        return plan.base_sales, overrides, None
+
+    base_amt = compute(plan, amount_overrides=overrides)
+    for code, label, _ in ITEMS:
+        if code in num_rows:
+            num_rows[code].append(base_amt.get(code, 0.0))
+    for k in num_kpis.keys():
+        num_kpis[k].append(base_amt.get(k, 0.0))
+
+    for nm, spec in specs[1:]:
+        S, ov, pre = apply_driver(spec)
+        scn_amt = compute(plan, sales_override=S, amount_overrides=ov) if pre is None else pre
+        for code, label, _ in ITEMS:
+            if code in num_rows:
+                num_rows[code].append(scn_amt.get(code, 0.0))
+        for k in num_kpis.keys():
+            num_kpis[k].append(scn_amt.get(k, 0.0))
+
+    df_num = pd.DataFrame(num_rows.values(), columns=cols, index=num_rows.keys())
+    df_kpi = pd.DataFrame(num_kpis.values(), columns=cols, index=num_kpis.keys())
+    return df_num, df_kpi
+
 with tab_scen:
     overrides = st.session_state.get("overrides", {})
     df_amounts, df_kpis, scenario_specs = scenario_table(base_plan, unit, overrides)
+
+numeric_amounts_data, numeric_kpis_data = compute_scenario_numeric(
+    base_plan,
+    scenario_specs,
+    st.session_state.get("overrides", {}),
+)
 
 with tab_analysis:
     _set_jp_font()
@@ -1150,60 +1742,47 @@ with tab_analysis:
                           target_ord=50_000_000, be_mode="OP")
     render_sensitivity_view(plan_inputs)
 
+with tab_ai:
+    st.markdown("<span class='ai-badge'>AIによる自動レビュー</span>", unsafe_allow_html=True)
+    st.subheader("インテリジェント・サマリー")
+    st.caption("シナリオやサイドバーの設定を更新すると、AIインサイトも即座にリフレッシュされます。")
+    overrides = st.session_state.get("overrides", {})
+    base_amt_ai = compute(base_plan, amount_overrides=overrides)
+    metrics = summarize_plan_metrics(base_amt_ai)
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("売上高 (目標)", f"{format_money(metrics['sales'], unit)} {unit}")
+    m2.metric("粗利率", format_ratio(metrics.get("gross_margin")))
+    m3.metric("経常利益", f"{format_money(metrics['ord'], unit)} {unit}")
+    m4.metric("経常利益率", format_ratio(metrics.get("ord_margin")))
+
+    st.markdown("### AIレコメンド")
+    insights = generate_ai_recommendations(metrics, numeric_amounts_data, numeric_kpis_data, unit)
+    for ins in insights:
+        st.markdown(
+            f"<div class='insight-card {ins['tone']}'><h4>{ins['title']}</h4><p>{ins['body']}</p></div>",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("### 異常値検知 (AI Quality Check)")
+    anomalies_df = detect_anomalies_in_plan(numeric_amounts_data, numeric_kpis_data, unit, metrics)
+    if not anomalies_df.empty:
+        st.dataframe(
+            anomalies_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "コメント": st.column_config.TextColumn("コメント", width="large"),
+            },
+        )
+    else:
+        st.success("異常値は検出されませんでした。データ整合性は良好です。")
+
 with tab_export:
     st.subheader("エクスポート")
     st.caption("ワンクリックでExcel出力（シート: 金額, KPI, 感応度）。PDFはExcelから印刷設定で作成してください。")
     specs = scenario_specs
-
-    def compute_scenario_numeric(plan, specs, overrides):
-        cols = ["項目"] + [nm for nm,_ in specs]
-        num_rows = {code: [label] for code, label, _ in ITEMS if code not in ("PC_SALES","PC_GROSS","PC_ORD","LDR","BE_SALES")}
-        num_kpis = {"BE_SALES": ["損益分岐点売上高"], "PC_SALES": ["一人当たり売上"], "PC_GROSS": ["一人当たり粗利"], "PC_ORD": ["一人当たり経常利益"], "LDR": ["労働分配率"]}
-        def apply_driver(spec):
-            t = spec["type"]; v = spec.get("value", None)
-            if t == "none": return plan.base_sales, overrides, None
-            if t == "sales_pct": return plan.base_sales * (1.0 + float(v)), overrides, None
-            if t == "gross_pt":
-                S = plan.base_sales
-                delta_e = -float(v) * S
-                ov = dict(overrides) if overrides else {}
-                tmp = compute(plan, sales_override=S, amount_overrides=ov)
-                base_oth = tmp["COGS_OTH"]
-                ov["COGS_OTH"] = max(0.0, base_oth + delta_e)
-                return S, ov, None
-            if t == "target_op":
-                target = float(v)
-                sol_S, sol_amt = bisection_for_target_op(plan, target, s_low=0.0, s_high=max(1.2*plan.base_sales, 1_000_000.0))
-                return sol_S, overrides, sol_amt
-            if t == "last_year":
-                return plan.base_sales, overrides, None
-            if t == "bep":
-                temp = compute(plan, sales_override=plan.base_sales, amount_overrides=overrides)
-                be = temp["BE_SALES"]
-                return be if math.isfinite(be) else plan.base_sales, overrides, None
-            return plan.base_sales, overrides, None
-
-        base_amt = compute(plan, amount_overrides=overrides)
-        for code, label, _ in ITEMS:
-            if code in num_rows:
-                num_rows[code].append(base_amt.get(code, 0.0))
-        for k in num_kpis.keys():
-            num_kpis[k].append(base_amt.get(k, 0.0))
-
-        for (nm, spec) in specs[1:]:
-            S, ov, pre = apply_driver(spec)
-            scn_amt = compute(plan, sales_override=S, amount_overrides=ov) if pre is None else pre
-            for code, label, _ in ITEMS:
-                if code in num_rows:
-                    num_rows[code].append(scn_amt.get(code, 0.0))
-            for k in num_kpis.keys():
-                num_kpis[k].append(scn_amt.get(k, 0.0))
-
-        df_num = pd.DataFrame(num_rows.values(), columns=cols, index=num_rows.keys())
-        df_kpi = pd.DataFrame(num_kpis.values(), columns=cols, index=num_kpis.keys())
-        return df_num, df_kpi
-
-    df_num, df_kpi = compute_scenario_numeric(base_plan, specs, st.session_state.get("overrides", {}))
+    df_num, df_kpi = numeric_amounts_data, numeric_kpis_data
 
     def recompute_sensitivity_table():
         base_amt = compute(base_plan, amount_overrides=st.session_state.get("overrides", {}))
